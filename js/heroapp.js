@@ -175,7 +175,7 @@ function haOpenEditor(opts) {
   const step = (i, label, names) => `<div class="ha-row"><span>${label}</span><button class="ha-arr" data-i="${i}" data-d="-1">◀</button><b data-nm="${i}"></b><button class="ha-arr" data-i="${i}" data-d="1">▶</button></div>`;
   box.innerHTML = `<div class="ha-card"><h2>${opts.title || 'Облик героя'}</h2><p>${opts.intro || ''}</p>
     <div class="ha-body"><div class="ha-pv"><canvas id="ha-body" width="120" height="132"></canvas>
-      ${opts.name != null ? `<input id="ha-name" maxlength="16" value="${String(opts.name).replace(/"/g, '&quot;')}" autocomplete="off" placeholder="Имя героя">` : `<div class="ha-nm">${opts.nick || ''}</div>`}</div>
+      ${opts.name != null ? `<input id="ha-name" maxlength="16" value="${String(opts.name).replace(/"/g, '&quot;')}" autocomplete="off" placeholder="Имя героя">` : `<div class="ha-nm">${heroNameHTML(opts.nick || '')}</div>`}</div>
     <div class="ha-rows">
       <div class="ha-row"><span>Облик</span><button class="ha-sexb" data-sex="0">Гном</button><button class="ha-sexb" data-sex="1">Гномка</button></div><div data-fem-row>${step(11, 'Причёска')}</div>
       ${step(0, 'Колпак')}<div class="ha-row"><span>Цвет колпака / шлема</span>${sw(1, HA_CAP_COLS)}</div>

@@ -27,3 +27,4 @@ mobile/android/.gradle/
 
 # Визуальные тесты: снимки текущего прогона и различия (эталоны в tests/visual/ref коммитим)
 tests/visual/out/
+tests/i18n/out/

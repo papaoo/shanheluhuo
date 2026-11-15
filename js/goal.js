@@ -394,7 +394,8 @@ function goalRenderCut() {
     if (L[0] === '#') html = `<div class="gm-card"><h2 class="gm-chap">${goalEsc(L[1])}</h2><div class="gm-text gm-hint">Нажмите «Дальше»</div><div class="gm-btns"><button data-gm="next" class="primary">Дальше ▸</button><button data-gm="skip">Пропустить</button></div></div>`;
     else {
       const w = GOAL_WHO[L[0]] || GOAL_WHO.note;
-      html = `<div class="gm-card"><div class="gm-say"><div class="gm-face" style="background:${w.bg};color:${w.col};border-color:${w.col}">${w.ch}</div>
+      const initial = typeof I18N !== 'undefined' && I18N.lang === 'zh-CN' && w.name ? Array.from(t(w.name))[0] : w.ch;
+      html = `<div class="gm-card"><div class="gm-say"><div class="gm-face" style="background:${w.bg};color:${w.col};border-color:${w.col}">${goalEsc(initial)}</div>
         <div class="gm-body">${w.name ? `<div class="gm-name" style="color:${w.col}">${w.name}</div>` : ''}<div class="gm-text${L[0] === 'note' ? ' note' : ''}">${goalEsc(L[1])}</div></div></div>
         <div class="gm-btns"><button data-gm="next" class="primary">Дальше ▸</button><button data-gm="skip">Пропустить</button></div></div>`;
     }

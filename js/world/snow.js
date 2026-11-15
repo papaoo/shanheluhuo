@@ -287,14 +287,14 @@ function seaChipText() {
 }
 function seaChipTip() {
   const S = SEA(), i = seaIdx(), h = i === 1 || i === 2 ? (isMirror() ? S.hay : seaHayInfo()) : null;
-  let tip = `${SEA_NAMES[i]}: день ${seaDayIn() + 1} из ${S.len}.` + (S.fixed == null ? ` Смена сезона через ${S.len - seaDayIn()} сут.` : '');
-  if (i === 0) tip += ' Всё растёт. Осенью пора делать заготовки.';
-  if (i === 1) tip += ' Осень: заготовь сено, зерно и дрова, зимой ничего не растёт.';
-  if (i === 2) tip += ' Зима: снег, лёд, ничего не растёт; свиньи и звери едят сено, печи едят брёвна.';
-  if (i === 3) tip += ' Весна: снег тает, всё оживает.';
-  if (h && h.need) tip += ` Сено: ${h.have} из ~${h.need} нужных.`;
+  let tip = t(SEA_NAMES[i] + ': день {0} из {1}.', seaDayIn() + 1, S.len) + (S.fixed == null ? ' ' + t('Смена сезона через {0} сут.', S.len - seaDayIn()) : '');
+  if (i === 0) tip += ' ' + t('Всё растёт. Осенью пора делать заготовки.');
+  if (i === 1) tip += ' ' + t('Осень: заготовь сено, зерно и дрова, зимой ничего не растёт.');
+  if (i === 2) tip += ' ' + t('Зима: снег, лёд, ничего не растёт; свиньи и звери едят сено, печи едят брёвна.');
+  if (i === 3) tip += ' ' + t('Весна: снег тает, всё оживает.');
+  if (h && h.need) tip += ' ' + t('Сено: {0} из ~{1} нужных.', h.have, h.need);
   const w = (i === 1 || i === 2) && S.fixed == null ? (isMirror() ? S.wood : seaWoodInfo()) : null;
-  if (w && w.n) tip += ` Дрова: ${w.have} из ~${w.need} брёвен.` + (w.cold ? ` Мёрзнет зданий: ${w.cold}.` : "");
+  if (w && w.n) tip += ' ' + t('Дрова: {0} из ~{1} брёвен.', w.have, w.need) + (w.cold ? ' ' + t('Мёрзнет зданий: {0}.', w.cold) : '');
   return tip;
 }
 function seaChip() {

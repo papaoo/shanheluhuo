@@ -41,6 +41,8 @@ function coopStand() {
 // Строки от сервера в разметку — только через это: ссылку ?server= может подсунуть кто угодно, и чужой сервер
 // прислал бы в чат или подписи <img onerror=…> (XSS на странице игры, доступ к сохранениям и входу)
 const coopEsc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const coopUserHTML = value => typeof I18N !== 'undefined' && I18N.userHTML ? I18N.userHTML(value) : coopEsc(value);
+const coopPresetChat = text => !!(Coop.meta && Array.isArray(Coop.meta.chat) && Coop.meta.chat.includes(text));
 
 // адрес сервера, если страница открыта с него же
 function coopOrigin() { return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host; }
@@ -612,8 +614,9 @@ function coopPlates(c) {
     const H = u.hero, px = u.x * TILE, py = u.y * TILE - 50;   // выше навершия посоха (жрец, маг): на -38 развилка торчала из ника «ушами»
     const col = (classes[H.clsKey] || {}).col || '#f0d890';
     c.font = 'bold 8px sans-serif';
-    c.lineWidth = 3; c.strokeStyle = 'rgba(20,12,4,0.9)'; c.strokeText(u.owner, px, py);
-    c.fillStyle = col; c.fillText(u.owner, px, py);
+    const userText = (method, ...args) => typeof I18N !== 'undefined' && I18N.canvasUserText ? I18N.canvasUserText(c, method, ...args) : c[method](...args);
+    c.lineWidth = 3; c.strokeStyle = 'rgba(20,12,4,0.9)'; userText('strokeText', u.owner, px, py);
+    c.fillStyle = col; userText('fillText', u.owner, px, py);
     if (u.title) { c.font = 'italic 6px sans-serif'; c.lineWidth = 2; c.strokeText('«' + u.title + '»', px, py - 8); c.fillStyle = '#f0d890'; c.fillText('«' + u.title + '»', px, py - 8); c.font = 'bold 8px sans-serif'; }
     const w = 26, ratio = Math.max(0, Math.min(1, H.hp / H.maxhp));
     c.fillStyle = 'rgba(20,12,4,0.9)'; c.fillRect(px - w / 2 - 1, py + 2, w + 2, 5);
@@ -623,10 +626,11 @@ function coopPlates(c) {
     const bub = Coop.bubbles.get(u.id);
     if (bub && bub.until > Game.time) {
       c.font = 'bold 7px sans-serif';
-      const tw = c.measureText(bub.text).width + 8;
+      const chatText = (method, ...args) => coopPresetChat(bub.text) ? c[method](...args) : userText(method, ...args);
+      const tw = chatText('measureText', bub.text).width + 8;
       c.fillStyle = 'rgba(250,240,210,0.95)'; c.fillRect(px - tw / 2, py - 20, tw, 11);
       c.strokeStyle = '#3a2a14'; c.lineWidth = 1; c.strokeRect(px - tw / 2 + 0.5, py - 19.5, tw - 1, 10);
-      c.fillStyle = '#2a1c0c'; c.fillText(bub.text, px, py - 12);
+      c.fillStyle = '#2a1c0c'; chatText('fillText', bub.text, px, py - 12);
     }
   }
   c.textAlign = 'start';
@@ -700,8 +704,8 @@ function coopGiveBar() {
   const near = Game.units.filter(u => u.owner && u !== h && !u.dead).map(u => [u.owner, Math.hypot(u.x - h.x, u.y - h.y)]).sort((a, b) => a[1] - b[1]);
   if (Coop.giveTo && !near.some(n => n[0] === Coop.giveTo)) Coop.giveTo = null;
   if (!near.length) return '<div class="cp-give lo">Передать некому: других героев в деревне нет</div>';
-  return `<div class="cp-give">Передать: ${near.map(([n, d]) => `<button class="cp-sm${Coop.giveTo === n ? ' on' : ''}" data-cpgive="${coopEsc(n)}"${d > 4.5 ? ' title="Подойди поближе (не дальше 4 клеток)"' : ''}>${coopEsc(n)} <span class="lo">${Math.round(d)} кл.</span></button>`).join('')}</div>`
-    + (Coop.giveTo ? `<div class="cp-give lo">Клик по предмету — отдать ${coopEsc(Coop.giveTo)}</div>` : '');
+  return `<div class="cp-give">Передать: ${near.map(([n, d]) => `<button class="cp-sm${Coop.giveTo === n ? ' on' : ''}" data-cpgive="${coopEsc(n)}"${d > 4.5 ? ' title="Подойди поближе (не дальше 4 клеток)"' : ''}>${coopUserHTML(n)} <span class="lo">${Math.round(d)} кл.</span></button>`).join('')}</div>`
+    + (Coop.giveTo ? `<div class="cp-give lo">${typeof I18N !== 'undefined' && I18N.userFormatHTML ? I18N.userFormatHTML('Клик по предмету — отдать {0}', Coop.giveTo) : 'Клик по предмету — отдать ' + coopEsc(Coop.giveTo)}</div>` : '');
 }
 
 function coopInvHtml() {
@@ -717,7 +721,7 @@ function coopPanel() {
   const cl = ((Coop.meta && Coop.meta.classes) || {})[H.clsKey] || { col: '#f0d890', name: H.cls };
   const hp = Math.round(H.hp), mhp = H.maxhp || 1;
   const food = Math.max(0, Math.min(1, h.food));
-  return `<div class="ihead"><img class="bpic" src="${portraitURL('hero', h.look)}" alt=""><div><h3 style="color:${cl.col}">${H.name}</h3>
+  return `<div class="ihead"><img class="bpic" src="${portraitURL('hero', h.look)}" alt=""><div><h3 style="color:${cl.col}">${coopUserHTML(H.name)}</h3>
     <span class="muted small">${cl.name} · уровень ${H.level}</span></div></div>
     <div class="irow">Здоровье <b>${hp}/${mhp}</b></div><div class="cp-bar"><i style="width:${Math.round(100 * hp / mhp)}%;background:#5ac04a"></i></div>
     <div class="irow">Сытость <b>${Math.round(food * 100)}%</b></div><div class="cp-bar"><i style="width:${Math.round(100 * Math.min(1, food))}%;background:#d0a83a"></i></div>
@@ -824,7 +828,7 @@ function coopQuestHud(x, title) {
     h += `<h4>${esc(x.r.t)} · ${Math.floor(x.r.left / 60)}:${String(x.r.left % 60).padStart(2, '0')}</h4><div class="${x.r.me ? 'ok' : ''}">${esc(x.r.x)}</div>`;
   }
   if (x.p) {
-    h += `<h4>Вдвоём с ${esc(x.p.w)}${x.p.on ? '' : ' (не в сети)'}</h4><div class="${x.p.d ? 'ok' : ''}">${x.p.d ? '✔ ' : ''}${esc(x.p.t)}${x.p.prog != null ? ` <b>${x.p.prog}%</b>` : ''}</div>`
+    h += `<h4>Вдвоём с ${coopUserHTML(x.p.w)}${x.p.on ? '' : ' (не в сети)'}</h4><div class="${x.p.d ? 'ok' : ''}">${x.p.d ? '✔ ' : ''}${esc(x.p.t)}${x.p.prog != null ? ` <b>${x.p.prog}%</b>` : ''}</div>`
       + `<div class="lo">${esc(x.p.x)} · побратимство ${x.p.fr}/5</div>`;
   }
   el.innerHTML = h;
@@ -837,20 +841,24 @@ function coopVilHud(v) {
   if (!el || !v) return;
   const q = v.q, e = coopEsc, tm = q ? `${Math.floor(q.left / 60)}:${String(q.left % 60).padStart(2, '0')}` : '';
   el.innerHTML = (q ? `<div>${q.done ? '<span class="ok">Заказ выполнен</span>' : 'Заказ деревни'}: ${e(String(q.w).toLowerCase())} «${e(q.g)}» <b>${e(q.have)}/${e(q.need)}</b>${q.done ? '' : ` <span class="lo">· до вечера ${e(tm)} · +${e(q.rw)} зол.</span>`}</div>` : '')
-    + `<div class="lo">Ночей без потерь подряд: <b>${e(v.st)}</b> · рекорд ${e(v.best)}${Array.isArray(v.hero) && v.hero.length ? ' · герои ночи: ' + v.hero.map(h => e(h[0]) + ' ×' + e(h[1])).join(', ') : ''}</div>`;
+    + `<div class="lo">Ночей без потерь подряд: <b>${e(v.st)}</b> · рекорд ${e(v.best)}${Array.isArray(v.hero) && v.hero.length ? ' · герои ночи: ' + v.hero.map(h => coopUserHTML(h[0]) + ' ×' + e(h[1])).join(', ') : ''}</div>`;
 }
 
 function coopRefreshHud() {
   if (!Coop.on) return;
   const on = document.getElementById('cp-online');
-  if (on) on.textContent = 'В деревне: ' + Game.units.filter(u => u.owner).map(u => u.owner).join(', ');
+  if (on) {
+    const names = Game.units.filter(u => u.owner).map(u => u.owner);
+    if (typeof I18N !== 'undefined' && I18N.lang === 'zh-CN') on.innerHTML = I18N.userFormatHTML('В деревне: {0}', names.join(', '));
+    else on.textContent = 'В деревне: ' + names.join(', ');
+  }
   const pop = document.getElementById('cp-pop');
   if (pop && pop.classList.contains('open') && pop.dataset.k === 'inv') pop.innerHTML = coopGiveBar() + coopInvHtml();
   if (pop && pop.classList.contains('open') && pop.dataset.k === 'decor') pop.innerHTML = coopDecorHtml();
   const lg = document.getElementById('cp-log');
   if (lg) {
     const now = Date.now();
-    lg.innerHTML = Coop.chatLog.filter(m => now - m.at < 12000).slice(-5).map(m => `<div><b>${coopEsc(m.from)}:</b> ${coopEsc(m.text)}</div>`).join('');
+    lg.innerHTML = Coop.chatLog.filter(m => now - m.at < 12000).slice(-5).map(m => `<div><b>${coopUserHTML(m.from)}:</b> ${coopPresetChat(m.text) ? coopEsc(m.text) : coopUserHTML(m.text)}</div>`).join('');
   }
   if (Game.selUnit && Game.selUnit === Game.hero) updateUI(true);
 }
@@ -1298,7 +1306,7 @@ function coopHint() {
       const saved = coopSaved(), savedHere = !!(saved && saved.token && saved.server === Coop.target);
       const b = document.createElement('button');
       b.className = 'sm-btn primary'; b.dataset.smJoin = '1';
-      b.innerHTML = `<b>Общая деревня</b><small>онлайн: ${coopEsc(j.online)}${savedHere ? ' · войти как ' + coopEsc(saved.nick) : ' · вход и регистрация'}</small>`;
+      b.innerHTML = `<b>Общая деревня</b><small>онлайн: ${coopEsc(j.online)}${savedHere ? ' · войти как ' + coopUserHTML(saved.nick) : ' · вход и регистрация'}</small>`;
       smSubAdd(b, true);
       b.addEventListener('click', () => {
         const sv = coopSaved();
@@ -1434,7 +1442,7 @@ function coopStatsShow(x, server) {
     <p>Игроков всего: <b>${esc(x.players)}</b> · за неделю: <b>${esc(x.activeWeek)}</b> · сегодня: <b>${esc(x.today.players)}</b> (входов ${esc(x.today.logins)}) · сейчас: <b>${esc(x.onlineNow)}</b><br>
     Пик онлайна: <b>${esc(x.peak.n)}</b> (${esc(dt(x.peak.at))}) · наиграно всего: <b>${esc(x.totalHours)} ч</b> · ведётся с ${dt(x.since)} · сервер ${esc(server)}</p>
     <table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="color:#f6d458"><th align="left">Игрок</th><th>Класс</th><th>Входов</th><th>Часов</th><th>Последний вход</th></tr>
-    ${x.list.map(p => `<tr><td>${p.online ? '● ' : ''}${esc(p.nick)}</td><td align="center">${esc((cls[p.cls] || {}).name || p.cls || '')}</td><td align="center">${esc(p.logins)}</td><td align="center">${esc(p.hours)}</td><td align="center">${esc(dt(p.last))}</td></tr>`).join('')}</table>
+    ${x.list.map(p => `<tr><td>${p.online ? '● ' : ''}${coopUserHTML(p.nick)}</td><td align="center">${esc((cls[p.cls] || {}).name || p.cls || '')}</td><td align="center">${esc(p.logins)}</td><td align="center">${esc(p.hours)}</td><td align="center">${esc(dt(p.last))}</td></tr>`).join('')}</table>
     <p style="margin-top:10px">По дням: ${esc(x.days.slice(0, 7).map(d => `${String(d.day).slice(5)} — ${d.players} игр., ${d.logins} вх., пик ${d.peak}`).join(' · ') || '—')}</p>
     <div style="text-align:center"><button class="cp-btn" data-close>Закрыть</button></div></div>`;
   document.body.appendChild(box);

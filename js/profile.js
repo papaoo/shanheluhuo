@@ -12,7 +12,8 @@ function profLoad() {
   let p = null;
   try { p = JSON.parse(localStorage.getItem(PROF_KEY)); } catch (e) { p = null; }
   if (!p || !p.list || !p.list[p.cur]) {
-    p = { cur: 'p1', list: { p1: { name: 'Безымянный гном', created: Date.now(), ach: {}, st: {} } } };
+    const name = typeof I18N !== 'undefined' && I18N.lang === 'zh-CN' ? t('Безымянный гном') : 'Безымянный гном';
+    p = { cur: 'p1', list: { p1: { name, created: Date.now(), ach: {}, st: {} } } };
   }
   Prof = p;
 }
@@ -185,6 +186,8 @@ function achPoll() {
 
 let profTab = 'saves';
 let profMsg = '';
+const profNamedMessage = (key, name) => typeof I18N !== 'undefined' && I18N.lang === 'zh-CN'
+  ? { userKey: key, name } : key.replace('{0}', () => name);
 
 function profOpen(tab) {
   profLoad_ensure();
@@ -212,12 +215,13 @@ function profRefresh() {
   profLoad_ensure();
   const p = profCur();
   const got = ACHS.filter(a => p.ach[a.id]).length;
-  let h = `<div class="prof-head"><h3>Игрок: ${esc(p.name)}</h3><button data-pa="close" title="Закрыть">✕</button></div>` +
+  const nameHTML = value => typeof I18N !== 'undefined' && I18N.userHTML ? I18N.userHTML(value) : esc(value);
+  let h = `<div class="prof-head"><h3>Игрок: ${nameHTML(p.name)}</h3><button data-pa="close" title="Закрыть">✕</button></div>` +
     `<div class="prof-tabs"><button data-pt="saves" class="${profTab === 'saves' ? 'active' : ''}">Сохранения</button>` +
     `<button data-pt="ach" class="${profTab === 'ach' ? 'active' : ''}">Ачивки ${got}/${ACHS.length}</button>` +
     (typeof lgRender === 'function' ? `<button data-pt="legacy" class="${profTab === 'legacy' ? 'active' : ''}">Наследие ${lgLevel()}</button>` : '') +
     `<button data-pt="who" class="${profTab === 'who' ? 'active' : ''}">Игроки</button></div>`;
-  if (profMsg) h += `<div class="prof-msg">${esc(profMsg)}</div>`;
+  if (profMsg) h += `<div class="prof-msg">${profMsg.userKey ? I18N.userFormatHTML(profMsg.userKey, profMsg.name) : esc(profMsg)}</div>`;
   if (profTab === 'saves') {
     h += '<div class="prof-sec">Слоты игрока</div>';
     for (let n = 1; n <= PROF_SLOTS; n++) h += slotLine('Слот ' + n, slotKey(n), { save: true, del: true });
@@ -236,11 +240,12 @@ function profRefresh() {
     h += '<div class="prof-sec">Текущий игрок</div>' +
       `<div class="prof-row"><input id="prof-name" maxlength="20" value="${esc(p.name)}" autocomplete="off"><button data-pa="rename">Переименовать</button></div>` +
       '<div class="prof-sec">Все игроки</div><div class="prof-players">' +
-      Object.entries(Prof.list).map(([id, q]) => `<button data-pa="switch" data-k="${id}" class="${id === Prof.cur ? 'active' : ''}">${esc(q.name)}<small>${Object.keys(q.ach).length}/${ACHS.length}</small></button>`).join('') + '</div>' +
+      Object.entries(Prof.list).map(([id, q]) => `<button data-pa="switch" data-k="${id}" class="${id === Prof.cur ? 'active' : ''}">${nameHTML(q.name)}<small>${Object.keys(q.ach).length}/${ACHS.length}</small></button>`).join('') + '</div>' +
       `<div class="prof-row"><input id="prof-new" maxlength="20" placeholder="Имя нового игрока" autocomplete="off"><button data-pa="create">Создать</button></div>` +
       '<div class="prof-sec">Перенос на другое устройство</div>' +
       '<div class="prof-row"><button data-pa="export">Скачать профиль</button><button data-pa="import">Загрузить из файла</button></div>' +
-      (Object.keys(Prof.list).length > 1 ? '<div class="prof-row"><button data-pa="delp" class="danger">Удалить игрока «' + esc(p.name) + '» со всеми слотами</button></div>' : '') +
+      (Object.keys(Prof.list).length > 1 ? '<div class="prof-row"><button data-pa="delp" class="danger">' +
+        (typeof I18N !== 'undefined' && I18N.userFormatHTML ? I18N.userFormatHTML('Удалить игрока «{0}» со всеми слотами', p.name) : 'Удалить игрока «' + esc(p.name) + '» со всеми слотами') + '</button></div>' : '') +
       '<p class="prof-note">Профили и сохранения хранятся в этом браузере. Очистка данных сайта сотрёт и их — на этот случай есть выгрузка в файл.</p>';
   }
   win.querySelector('.prof-body').innerHTML = h;
@@ -284,12 +289,13 @@ function profAction(a, k) {
     if (n) {
       let i = 1; while (Prof.list['p' + i]) i++;
       Prof.list['p' + i] = { name: n, created: Date.now(), ach: {}, st: {} };
-      Prof.cur = 'p' + i; profSave(); profMsg = `Игрок «${n}» создан`; profBtnLabel();
+      Prof.cur = 'p' + i; profSave(); profMsg = profNamedMessage('Игрок «{0}» создан', n); profBtnLabel();
     }
   } else if (a === 'switch') {
-    if (Prof.list[k]) { Prof.cur = k; profSave(); profMsg = `Играет: ${profCur().name}`; profBtnLabel(); }
+    if (Prof.list[k]) { Prof.cur = k; profSave(); profMsg = profNamedMessage('Играет: {0}', profCur().name); profBtnLabel(); }
   } else if (a === 'delp') {
-    if (Object.keys(Prof.list).length < 2 || !confirm(`Удалить игрока «${profCur().name}», его слоты и ачивки насовсем?`)) return;
+    const message = typeof I18N !== 'undefined' && I18N.userMessage ? I18N.userMessage('Удалить игрока «{0}», его слоты и ачивки насовсем?', profCur().name) : `Удалить игрока «${profCur().name}», его слоты и ачивки насовсем?`;
+    if (Object.keys(Prof.list).length < 2 || !confirm(message)) return;
     for (let n = 1; n <= PROF_SLOTS; n++) { const key = slotKey(n); try { localStorage.removeItem(SAVE_KEY + key); localStorage.removeItem(SAVE_KEY + key + '.meta'); } catch (e) { /* ничего */ } }
     delete Prof.list[Prof.cur]; Prof.cur = Object.keys(Prof.list)[0]; profSave(); profBtnLabel();
   } else if (a === 'export') {
@@ -333,7 +339,7 @@ function profImport(file) {
         if (s.meta) localStorage.setItem(SAVE_KEY + slotKey(n, id) + '.meta', s.meta);
       }
       Prof.cur = id; profSave(); profBtnLabel();
-      profMsg = `Игрок «${name}» загружен из файла`;
+      profMsg = profNamedMessage('Игрок «{0}» загружен из файла', name);
     } catch (e) { profMsg = 'Файл не похож на профиль OldGold'; }
     profRefresh();
   };
@@ -343,7 +349,10 @@ function profImport(file) {
 function profBtnLabel() {
   const b = document.querySelector('#start-menu [data-sm="profile"] small');
   const ttl = typeof lgTitle === 'function' ? ' · ' + lgTitle() : '';
-  if (b) b.textContent = profCur().name + ttl;
+  if (b) {
+    if (typeof I18N !== 'undefined' && I18N.lang === 'zh-CN' && I18N.userHTML) b.innerHTML = I18N.userHTML(profCur().name) + esc(ttl);
+    else b.textContent = profCur().name + ttl;
+  }
 }
 
 function initProfile() {

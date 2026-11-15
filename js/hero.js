@@ -8,7 +8,8 @@
 const HERO_NAMES_M = ['Торин', 'Гимли', 'Дорин', 'Балин', 'Орин', 'Громм', 'Харальд', 'Двалин'];
 const HERO_NAMES_F = ['Брунгильд', 'Фрейя', 'Хельга', 'Берта', 'Дис', 'Гудрун'];
 const HERO_NAMES = HERO_NAMES_M.concat(HERO_NAMES_F);
-const heroNameFor = fem => { const a = fem ? HERO_NAMES_F : HERO_NAMES_M; return a[(Math.random() * a.length) | 0]; };
+const heroNameFor = fem => { const a = fem ? HERO_NAMES_F : HERO_NAMES_M, name = a[(Math.random() * a.length) | 0]; return typeof I18N !== 'undefined' && I18N.lang === 'zh-CN' ? t(name) : name; };
+const heroNameHTML = name => typeof I18N !== 'undefined' && I18N.userHTML ? I18N.userHTML(name) : String(name).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const TEAM_MAX = 3;                 // сколько гномов герой берёт в команду
 const HERO_CARRY = 3;               // сколько несёт за раз из кучи
 const DASH_CD = 45, DASH_TIME = 8, CRY_CD = 70, CRY_TIME = 12;
@@ -124,15 +125,19 @@ function drawSpawnSign(c) {
   const k = (Math.floor(Game.time / 12) * 7 + (Game.seed | 0) + (Game.signBump || 0) * 3) % n;
   const text = t(SPAWN_SIGNS[(k + n) % n]);
   c.save();
-  c.font = 'bold 6px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+  const chinese = typeof I18N !== 'undefined' && I18N.lang === 'zh-CN';
+  c.font = chinese ? 'bold 8px sans-serif' : 'bold 6px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
   // перенос по словам: ширина доски ~64 px
-  const lines = []; let cur = '';
-  for (const w of text.split(' ')) {
-    const t = cur ? cur + ' ' + w : w;
-    if (c.measureText(t).width > 62 && cur) { lines.push(cur); cur = w; } else cur = t;
+  const lines = chinese ? I18N.wrapText(c, text, 62) : []; let cur = '';
+  if (!chinese) {
+    for (const w of text.split(' ')) {
+      const t = cur ? cur + ' ' + w : w;
+      if (c.measureText(t).width > 62 && cur) { lines.push(cur); cur = w; } else cur = t;
+    }
+    lines.push(cur);
   }
-  lines.push(cur);
-  const bw = 70, bh = 8 + lines.length * 8, top = py - 14 - bh;
+  const lineHeight = chinese ? 10 : 8;
+  const bw = 70, bh = 8 + lines.length * lineHeight, top = py - 14 - bh;
   c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(px - 6 + 3, py - 3, 12, 3);                 // тень у основания
   c.fillStyle = '#4a3220'; c.fillRect(px - 1, top + bh - 2, 3, py - top - bh + 2);       // столб
   c.fillStyle = '#6a4a2c'; c.fillRect(px - 1, top + bh - 2, 1, py - top - bh + 2);
@@ -144,7 +149,7 @@ function drawSpawnSign(c) {
   c.fillStyle = '#d8d0c0';
   for (const [nx, ny] of [[-bw / 2 + 3, top + 2], [bw / 2 - 4, top + 2], [-bw / 2 + 3, top + bh - 4], [bw / 2 - 4, top + bh - 4]]) c.fillRect(px + nx, ny, 1, 1);   // гвозди
   lines.forEach((ln, i) => {
-    const ty = top + 9 + i * 8;
+    const ty = top + 9 + i * lineHeight;
     c.lineWidth = 2; c.strokeStyle = 'rgba(20,10,2,0.55)'; c.strokeText(ln, px, ty);
     c.fillStyle = '#fff0c0'; c.fillText(ln, px, ty);
   });
@@ -513,8 +518,11 @@ function heroPanel() {
   const pct = H.level >= HERO_LVL_MAX ? 100 : Math.max(0, Math.min(100, ((score - lo) / (hi - lo)) * 100));
   const mate = Game.units.find(u => u.teamOf === h.id);
   const bar = (n, c) => `<span class="hp-bar"><i style="width:${Math.min(100, n * 2.2)}%;background:${c}"></i></span>`;
+  const tip = typeof I18N !== 'undefined' && I18N.userFormatHTML
+    ? I18N.userFormatHTML('Кликните по стройке, полю, дереву, камню, куче груза или зданию без работника — {0} пойдёт делать это. По земле — просто идёт. Esc — снять выбор.', H.name)
+    : `Кликните по стройке, полю, дереву, камню, куче груза или зданию без работника — ${H.name} пойдёт делать это. По земле — просто идёт. Esc — снять выбор.`;
 
-  return `<div class="ihead"><img class="bpic" src="${portraitURL('hero', h.look)}" alt=""><div><h3>${H.name}</h3>
+  return `<div class="ihead"><img class="bpic" src="${portraitURL('hero', h.look)}" alt=""><div><h3>${heroNameHTML(H.name)}</h3>
     <span class="muted small">${H.cls ? H.cls : 'Гном-универсал'} · уровень ${H.level}</span>${heroRestLeft(H) > 0 ? `<br><span class="small" title="После проигранного забега: минуту слабее и медленнее">😴 Отлёживается: ${Math.ceil(heroRestLeft(H) / 1000)} с</span>` : ''}</div></div>
     <div class="hp-xp" title="${H.level >= HERO_LVL_MAX ? 'Высший, 15-й уровень' : `Растёт вместе с городом и боями: ${Math.floor(score)} из ${Math.ceil(hi)} очков до уровня ${H.level + 1}`}"><i style="width:${pct}%"></i></div>
     <div class="hp-stats">
@@ -529,7 +537,7 @@ function heroPanel() {
     <div class="irow muted small">Оружие: ${H.equip.weapon || 'нет'} · Доспех: ${H.equip.armor || 'нет'}</div>
     ${typeof neuPanelRow === 'function' ? neuPanelRow() : ''}
     ${typeof dpHeroRow === 'function' ? dpHeroRow() : ''}
-    <div class="tip">Кликните по стройке, полю, дереву, камню, куче груза или зданию без работника — ${H.name} пойдёт делать это. По земле — просто идёт. Esc — снять выбор.</div>`;
+    <div class="tip">${tip}</div>`;
 }
 
 function initHeroUI() {
@@ -578,7 +586,7 @@ function initHeroUI() {
 function heroBtnUpdate() {
   const btn = document.getElementById('hero-btn');
   if (!btn || !Game.hero) return;
-  const html = `<img src="${portraitURL("hero", Game.hero.look)}" alt=""><span class="hb-t">${Game.hero.hero.name} · ${Game.hero.hero.level}</span><span class="hb-lv">${Game.hero.hero.level}</span>`;
+  const html = `<img src="${portraitURL("hero", Game.hero.look)}" alt=""><span class="hb-t">${heroNameHTML(Game.hero.hero.name)} · ${Game.hero.hero.level}</span><span class="hb-lv">${Game.hero.hero.level}</span>`;
   if (btn.dataset.h !== html) { btn.dataset.h = html; btn.innerHTML = html; }
 }
 
@@ -678,8 +686,9 @@ function heroBtnUpdate() {
     if (!h.inside) {
       c.font = 'bold 8px sans-serif'; c.textAlign = 'center';
       const nm = h.hero.name, px = h.x * TILE, py = h.y * TILE - 44;
-      c.lineWidth = 3; c.strokeStyle = 'rgba(20,12,4,0.9)'; c.strokeText(nm, px, py);
-      c.fillStyle = sel ? '#ffe070' : '#f0d890'; c.fillText(nm, px, py);
+      const drawName = method => typeof I18N !== 'undefined' && I18N.canvasUserText ? I18N.canvasUserText(c, method, nm, px, py) : c[method](nm, px, py);
+      c.lineWidth = 3; c.strokeStyle = 'rgba(20,12,4,0.9)'; drawName('strokeText');
+      c.fillStyle = sel ? '#ffe070' : '#f0d890'; drawName('fillText');
       c.textAlign = 'start';
     }
     // цель команды: пульсирующие угольники на клетке (вместо флажка); удар героя рисует herocard.js
@@ -764,7 +773,7 @@ function heroCardUpdate() {
     // телефон: тонкая плашка сверху (портрет, имя, рывок/клич), по ▾ раскрывается полная панель
     const H = Game.hero.hero, cd = k => Math.max(0, Math.ceil((H[k] || 0) - Game.time));
     const ab = (k, name, lvl, cdk) => H.level < lvl ? '' : `<button class="hp-ab" data-hero="${k}" ${cd(cdk) ? 'disabled' : ''}><b>${name}</b>${cd(cdk) ? ' ' + cd(cdk) : ''}</button>`;
-    html = `<div class="hc-row"><img src="${portraitURL('hero', Game.hero.look)}" alt=""><span class="hc-n"><b>${H.name}</b> · ур. ${H.level}</span><button class="hp-ab" data-hero="center" title="Камера к герою"><b>◎</b></button>${ab('dash', 'Рывок', 1, 'cdDash')}${ab('cry', 'Клич', 3, 'cdCry')}</div>`
+    html = `<div class="hc-row"><img src="${portraitURL('hero', Game.hero.look)}" alt=""><span class="hc-n"><b>${heroNameHTML(H.name)}</b> · ур. ${H.level}</span><button class="hp-ab" data-hero="center" title="Камера к герою"><b>◎</b></button>${ab('dash', 'Рывок', 1, 'cdDash')}${ab('cry', 'Клич', 3, 'cdCry')}</div>`
       + (heroCardOpen ? `<div class="hc-body">${heroPanel()}</div>` : '')
       + `<button class="hc-m" title="Свернуть в иконку">–</button><button class="hc-t" title="${heroCardOpen ? 'Меньше' : 'Подробнее'}">${heroCardOpen ? '▴' : '▾'}</button><button class="hc-x" title="Снять выбор">×</button>`;
   } else html = heroPanel() + '<button class="hc-x" title="Закрыть (Esc)">×</button>';

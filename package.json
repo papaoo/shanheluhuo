@@ -9,7 +9,9 @@
     "check": "node tests/check-load.js",
     "test:maps": "node tests/maps-test.js",
     "test:render": "node tests/render-budget-test.js",
-    "test:visual": "node tests/visual-test.js"
+    "test:visual": "node tests/visual-test.js",
+    "test:i18n": "node tests/i18n-runtime-test.js && node tests/i18n-catalogue-test.js",
+    "audit:zh": "node tools/i18n/zh-audit.js --source"
   },
   "engines": { "node": ">=18" }
 }

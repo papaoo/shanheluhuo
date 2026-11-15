@@ -8,6 +8,8 @@
 const path = require('path'), fs = require('fs'), http = require('http'), zlib = require('zlib');
 const ROOT = path.join(__dirname, '..');
 const REPORT = process.argv.includes('--report');
+const langArg = process.argv.indexOf('--lang');
+const LANG = langArg >= 0 ? process.argv[langArg + 1] : '';
 // Пороги в единицах машины (замер 28.10, CPU ×4: тролль 150–180, призрак 95–115, render z=1 ~11, z=0.5 ~18; запас ×2.
 // До оптимизации 0.11.89 тролль был ~1010, призрак ~210 — такие цифры тест ловит)
 const BUDGET = { troll: 350, ghost: 230, render1: 25, render05: 40 };
@@ -43,13 +45,13 @@ function serve() {
   const errs = [];
   pg.on('pageerror', e => errs.push(e.message));
   await pg.addInitScript(([raw]) => { try { localStorage.clear(); localStorage.setItem('feod.save.manual', raw); localStorage.setItem('feod.save.manual.meta', '{"time":1}'); } catch (e) { /* без хранилища */ } }, [raw]);
-  await pg.goto(`http://127.0.0.1:${port}/index.html`);
+  await pg.goto(`http://127.0.0.1:${port}/index.html${LANG ? '?lang=' + encodeURIComponent(LANG) : ''}`);
   await pg.waitForFunction(() => { const b = document.querySelector('#start-menu [data-sm="continue"]'); return b && b.offsetWidth > 0 && !b.disabled; }, null, { timeout: 200000 });
-  await pg.evaluate(() => { const b = [...document.querySelectorAll('button')].find(b => b.offsetWidth && b.textContent.trim() === 'Понятно'); if (b) b.click(); document.querySelector('#start-menu [data-sm="continue"]').click(); });
+  await pg.evaluate(() => { const b = [...document.querySelectorAll('button')].find(b => b.offsetWidth && b.textContent.trim() === t('Понятно')); if (b) b.click(); document.querySelector('#start-menu [data-sm="continue"]').click(); });
   await pg.waitForFunction(() => typeof Game !== 'undefined' && Game.buildings.length > 0, null, { timeout: 120000 });
   // после загрузки меню ещё может показать окна (что нового, обучение) — закрываем, пока игра не пойдёт
   for (let i = 0; i < 20 && await pg.evaluate(() => StartMenu.open); i++) {
-    await pg.evaluate(() => { const b = [...document.querySelectorAll('button')].find(b => b.offsetWidth && /^(Понятно|Закрыть|Продолжить|Пропустить|В путь|Играть)/.test(b.textContent.trim())); if (b) b.click(); });
+    await pg.evaluate(() => { const labels = ['Понятно', 'Закрыть', 'Продолжить', 'Пропустить', 'В путь', 'Играть'].map(s => t(s)); const b = [...document.querySelectorAll('button')].find(b => b.offsetWidth && labels.some(s => b.textContent.trim().startsWith(s))); if (b) b.click(); });
     await pg.waitForTimeout(700);
   }
   if (process.env.DBG) console.log(await pg.evaluate(() => [StartMenu.open, [...document.querySelectorAll('button')].filter(b => b.offsetWidth).map(b => b.textContent.trim().slice(0, 20)).join(' | ')]));

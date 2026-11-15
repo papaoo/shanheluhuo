@@ -205,7 +205,7 @@ function meDlgCode() {
 function meDlgShare(map) {
   const fname = (map.name.replace(/[^\wа-яёА-ЯЁ-]+/g, '_') || 'karta') + '.oldgold-map.json';
   const d = meDlg(`<h3>Обмен картой</h3><div class="me-info">Отправьте файл или код другу в чате. Друг нажмёт «Редактор карт» → «Файл…» или «Код…». Сервера нет — карта живёт у вас.</div>
-    <label>Код карты<textarea id="me-sharecode" readonly>Готовим код…</textarea></label>
+    <label>Код карты<textarea id="me-sharecode" readonly>${t('Готовим код…')}</textarea></label>
     <div class="me-btns"><button class="me-btn primary" data-d="copy">Копировать код</button><button class="me-btn" data-d="file">Скачать файл</button><button class="me-btn ghost" data-d="x">Закрыть</button></div><div class="sm-msg me-info" id="me-sharemsg"></div>`,
   a => {
     const say = t => { const m = meEl('me-sharemsg'); if (m) m.textContent = t; };
@@ -220,7 +220,7 @@ function meDlgShare(map) {
       say('Файл ' + fname + ' скачан');
     }
   });
-  meToCode(map).then(c => { const ta = meEl('me-sharecode'); if (ta) ta.value = c; }, () => { const ta = meEl('me-sharecode'); if (ta) ta.value = 'Не вышло подготовить код — используйте файл'; });
+  meToCode(map).then(c => { const ta = meEl('me-sharecode'); if (ta) ta.value = c; }, () => { const ta = meEl('me-sharecode'); if (ta) ta.value = t('Не вышло подготовить код — используйте файл'); });
   return d;
 }
 

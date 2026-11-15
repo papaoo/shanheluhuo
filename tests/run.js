@@ -74,6 +74,8 @@ const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
   if (p.status !== 0 && !r.fails.length) r.fails.push(out.trim().slice(0, 500) || 'код выхода ' + p.status);
 });
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
+scriptTest('i18n-runtime: language selection, protected content, Chinese Canvas', 'i18n-runtime-test.js');
+scriptTest('i18n-catalogue: shipped Chinese dictionaries and placeholders', 'i18n-catalogue-test.js');
 scriptTest('savefile: золотые сейвы всех версий, битые и огромные файлы, копии, импорт/экспорт, мир коопа и откат', 'save-test.js', ['3'], 480000);
 scriptTest('server: раздача файлов, /err, /e, /t, /report, /stats', 'server-test.js');
 scriptTest('fuzz-server: злонамеренные запросы и сообщения не роняют и не портят сервер', 'fuzz-server-test.js');

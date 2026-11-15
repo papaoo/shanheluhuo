@@ -241,7 +241,8 @@ function guideEntries() {
   for (const t of BUILD_ORDER) {
     const d = BUILDINGS[t];
     const cost = Object.entries(d.cost).map(([g, n]) => `${n} ${GOODS[g].name.toLowerCase()}`).join(', ');
-    let body = `<p>${d.desc}</p><p class="gk">Стоит: ${cost}.${d.worker ? ` Работает: ${UNIT_TYPES[d.worker].name.toLowerCase()}.` : d.auto ? ' Работает сам.' : ''}</p>`;
+    const costText = typeof I18N !== 'undefined' && I18N.lang === 'zh-CN' ? window.t('Стоимость: {0}.', cost) : `Стоит: ${cost}.`;
+    let body = `<p>${d.desc}</p><p class="gk">${costText}${d.worker ? ` Работает: ${UNIT_TYPES[d.worker].name.toLowerCase()}.` : d.auto ? ' Работает сам.' : ''}</p>`;
     const rc = (d.recipes || []).map(r => `${Object.entries(r.in).map(([g, n]) => n + '×' + GOODS[g].name).join(' + ') || 'из недр'} → ${Object.entries(r.out).map(([g, n]) => n + '×' + GOODS[g].name).join(' + ')}`);
     if (rc.length) body += `<p class="gk">${rc.join('<br>')}</p>`;
     E.push({ id: 'b:' + t, cat: 'b', title: d.name, sub: d.cat, body, sarc: SARC_B[t] || SARC_CAT[d.cat] || '', icon: ['b', t] });
@@ -284,7 +285,8 @@ function guideRender(focusId) {
   const all = guideEntries();
   const q = Guide.q;
   document.getElementById('g-cats').innerHTML = GUIDE_CATS.map(([k, n]) => `<button data-gc="${k}" class="${!q && Guide.cat === k ? 'on' : ''}">${n}</button>`).join('');
-  const list = q ? all.filter(e => e.title.toLowerCase().includes(q)) : all.filter(e => e.cat === Guide.cat);
+  const list = q ? all.filter(e => e.title.toLowerCase().includes(q)
+    || (typeof I18N !== 'undefined' && I18N.lang === 'zh-CN' && t(e.title).toLowerCase().includes(q))) : all.filter(e => e.cat === Guide.cat);
   const box = document.getElementById('g-list');
   box.innerHTML = list.length ? list.map(e => {
     const ic = e.icon ? `<img src="${e.icon[0] === 'b' ? buildingIconURL(e.icon[1]) : iconURL('good', e.icon[1], 2)}" alt="">` : '<span class="g-dot"></span>';

@@ -629,7 +629,10 @@ function campRestart() {
 // Портрет собеседника. Если изображения нет, показываем букву.
 function campFace(w, who) {
   const frames = typeof campPortraitFrames === 'function' ? campPortraitFrames(who) : '';
-  if (!frames) return `<span class="cd-ch" style="color:${w.col};background:${w.bg}">${campEsc(w.ch)}</span>`;
+  if (!frames) {
+    const initial = typeof I18N !== 'undefined' && I18N.lang === 'zh-CN' && w.name ? Array.from(t(w.name))[0] : w.ch;
+    return `<span class="cd-ch" style="color:${w.col};background:${w.bg}">${campEsc(initial)}</span>`;
+  }
   return `<span class="cd-pt" style="border-color:${w.col};background-color:${w.bg};--portrait-blink-delay:-${(Math.random() * 4).toFixed(1)}s">${frames}</span>`;
 }
 // портрет меняется только при смене собеседника — иначе моргание сбивалось бы на каждой реплике

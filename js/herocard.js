@@ -115,7 +115,7 @@ function hcHeader(H, h, mobile) {
   const bars = (lifeOn ? `<div class="hc-bar" title="Здоровье ${hp}/${H.maxhp}"><i style="width:${Math.round(100 * hp / H.maxhp)}%;background:${hpc}"></i><span>${hp}/${H.maxhp}</span></div>` : '')
     + (mm ? `<div class="hc-bar mp" title="${RS.name} ${rv}/${mm}"><i style="width:${Math.round(100 * rv / mm)}%;background:${RS.col}"></i><span>${RS.name.toLowerCase()} ${rv}/${mm}</span></div>` : '')
     + `<div class="hc-bar xp" title="${H.level >= HERO_LVL_MAX ? 'Высший, 15-й уровень' : `Опыт растёт вместе с городом и боями: ${Math.floor(score)} из ${Math.ceil(hi)}`}"><i style="width:${xp}%"></i></div>`;
-  return `<div class="hc-head"><img src="${portraitURL('hero', h.look)}" alt=""><div class="hc-id"><b>${H.name}</b><small>${H.clsKey && GCLS[H.clsKey] ? GCLS[H.clsKey].name : H.cls || 'Гном-универсал'} · ур. ${H.level}</small></div>`
+  return `<div class="hc-head"><img src="${portraitURL('hero', h.look)}" alt=""><div class="hc-id"><b>${heroNameHTML(H.name)}</b><small>${H.clsKey && GCLS[H.clsKey] ? GCLS[H.clsKey].name : H.cls || 'Гном-универсал'} · ур. ${H.level}</small></div>`
     + `<div class="hc-btns"><button class="hc-c" data-hero="center" title="Камера к герою">◎</button>${mobile ? `<button class="hc-t" title="${heroCardOpen ? 'Свернуть' : 'Подробнее'}">${heroCardOpen ? '▴' : '▾'}</button><button class="hc-m" title="Спрятать в иконку">–</button>` : ''}<button class="hc-x" title="Снять выбор (Esc)">×</button></div></div><div class="hc-bars">${bars}</div>`;
 }
 

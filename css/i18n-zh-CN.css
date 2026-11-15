@@ -1,0 +1,36 @@
+/* Loaded after the game styles; applies only to Simplified Chinese. System
+   CJK fonts keep the offline game small and cover desktop / Android / iOS. */
+html:lang(zh-CN) {
+  --font-zh-ui: "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-zh-title: "Noto Serif CJK SC", "Noto Serif SC", "Songti SC", "SimSun", serif;
+}
+html:lang(zh-CN) body,
+html:lang(zh-CN) body :is(button, input, select, textarea, label, p, div, span, b, small, td, th, li, summary) {
+  font-family: var(--font-zh-ui);
+}
+html:lang(zh-CN) body :is(h1, h2, h3, h4, .sm-title, .ihead h3, #help h3) {
+  font-family: var(--font-zh-title);
+  letter-spacing: .02em;
+}
+html:lang(zh-CN) body :is(p, li, td, th, .toast, .ach-toast, .hc-body) {
+  line-break: strict;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+html:lang(zh-CN) body :is(button, input, select, textarea) {
+  letter-spacing: normal;
+}
+html:lang(zh-CN) .lang-name {
+  white-space: nowrap;
+  word-break: keep-all;
+}
+html:lang(zh-CN) #start-menu .sm-btn small {
+  text-wrap: balance;
+  line-height: 1.4;
+  line-break: strict;
+}
+/* Help is a modal window: use the modal tier defined in uilayers.css so
+   mobile tabs, the minimap and floating HUD labels stay beneath it. */
+html:lang(zh-CN) #guide {
+  z-index: 390;
+}
