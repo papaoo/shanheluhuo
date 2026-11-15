@@ -45,7 +45,9 @@ function audit({ source = false } = {}) {
     const loaded = new Set([...html.matchAll(/src="(js\/[^"?]+\.js)/g)].map(m => m[1]));
     loaded.add('index.html'); loaded.add('privacy.html');
     const entries = scanAll();
-    const live = entries.filter(e => [...e.files].some(f => loaded.has(f.split(':')[0])));
+    // HTML inline scripts use "index.html#inline:line" source locations.
+    // They are player-facing too, including the early loading menu.
+    const live = entries.filter(e => [...e.files].some(f => loaded.has(f.split(/[:#]/)[0])));
     report.source = { scanned: entries.length, browserCandidates: live.length, exact: 0, resolved: 0, unresolved: [], excludedNonBrowser: entries.length - live.length };
     for (const e of live) {
       if (e.ru in zh) { report.source.exact++; continue; }
@@ -65,5 +67,6 @@ if (require.main === module) {
   console.log(JSON.stringify({ englishKeys: report.englishKeys, chineseKeys: report.chineseKeys, missingBase: report.missingBase.length,
     conflictingDuplicates: report.conflictingDuplicates.length, errors: report.errors,
     source: report.source && { ...report.source, unresolved: report.source.unresolved.length } }, null, 2));
-  if (report.errors.length || report.missingBase.length) process.exitCode = 1;
+  if (report.errors.length || report.missingBase.length || report.conflictingDuplicates.length
+    || (report.source && report.source.unresolved.length)) process.exitCode = 1;
 }

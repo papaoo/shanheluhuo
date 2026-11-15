@@ -8,6 +8,7 @@ const visibleNumbers = text => (text.replace(/<[^>]*>/g, '').match(/\d+(?:[.,]\d
 const { report, context, en, zh } = audit();
 assert.deepEqual(report.errors, [], report.errors.join('\n'));
 assert.deepEqual(report.missingBase, [], 'Every shipped English key needs an independent Chinese translation');
+assert.deepEqual(report.conflictingDuplicates, [], 'Duplicate source keys must agree across all Chinese modules');
 for (const [key, value] of Object.entries(zh)) {
   assert.equal(context.t(key), value, 'Explicit lookup must preserve the whole translation: ' + key);
 }

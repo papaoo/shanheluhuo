@@ -174,6 +174,7 @@ async function main() {
             await page.reload({ waitUntil: 'domcontentloaded' });
             await page.waitForSelector('#start-menu [data-sm="new"]');
             report.offline = await page.evaluate(() => ({ lang: I18N.lang, title: t('Новая игра'), dictionaries: Object.keys(I18N.dict['zh-CN']).length }));
+            await capture('offline-menu');
             await page.click('#start-menu [data-sm="continue"]');
             await page.waitForFunction(() => !StartMenu.open && Game.hero && Game.buildings.length > 0);
             report.offline.play = await page.evaluate(() => ({ name: Game.hero.hero.name, buildings: Game.buildings.length }));
