@@ -120,6 +120,7 @@ async function main() {
             saveGame('manual'); const loaded = loadGame('manual');
             return { before, loaded, after: { name: Game.hero.hero.name, buildings: Game.buildings.length, units: Game.units.length } };
           });
+          await page.locator('.rv-note').waitFor({ state: 'hidden', timeout: 30000 });
           await page.evaluate(() => { const spot = heroSpawnSpot(); R.cam.z = 2; centerOn((spot.sign[0] + .5) * TILE, (spot.sign[1] - 1) * TILE); });
           await capture('sign');
           if (mobile) {

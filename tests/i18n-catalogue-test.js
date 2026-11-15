@@ -23,8 +23,8 @@ for (const { source, html, after } of htmlFixtures) {
 // Build the actual season tooltip: independently translated sentences must
 // survive concatenation, including reserve counters and permanent biomes.
 const snow = fs.readFileSync(path.join(__dirname, '../js/world/snow.js'), 'utf8');
-vm.runInContext(snow.slice(snow.indexOf('function seaChipTip()'), snow.indexOf('\nfunction seaChip()')), context);
-for (const { name, state, raw, after } of seasonFixtures) {
+vm.runInContext(snow.slice(snow.indexOf('const SEA_GLYPH'), snow.indexOf('\nconst MT_CAP')), context);
+for (const { name, state, raw, after, chip } of seasonFixtures) {
   Object.assign(context, { SEA: () => state, SEA_NAMES: ['Лето', 'Осень', 'Зима', 'Весна'],
     seaIdx: () => state.index, seaDayIn: () => state.day, isMirror: () => false,
     seaHayInfo: () => state.hay, seaWoodInfo: () => state.wood });
@@ -34,6 +34,18 @@ for (const { name, state, raw, after } of seasonFixtures) {
   const actual = context.I18N.trHtml(vm.runInContext('seaChipTip()', context));
   assert.equal(actual, after, 'Chinese season tooltip changed: ' + name);
   assert.deepEqual(visibleNumbers(actual), visibleNumbers(raw), 'Season tooltip numbers changed: ' + name);
+  if (chip) for (const profile of ['desktop', 'portrait', 'landscape']) {
+    const mobile = profile !== 'desktop';
+    context.document.body = { classList: { contains: className => className === 'mobile' && mobile } };
+    const text = vm.runInContext('seaChipText()', context), expected = chip[mobile ? 'mobile' : 'desktop'];
+    assert.equal(context.I18N.tr(text), expected, 'Winter clock label changed: ' + name + ' / ' + profile);
+    const clock = { textContent: '', title: '' };
+    context.document.getElementById = id => id === 'clock' ? clock : null;
+    Object.assign(context, { Game: { sea: state, time: 0 }, isNightNow: () => false, isEveningNow: () => false });
+    vm.runInContext('seaChip()', context);
+    assert.equal(context.I18N.tr(clock.textContent), '☀ 00:00 · ' + expected, 'Full winter clock changed: ' + name + ' / ' + profile);
+    assert.deepEqual(visibleNumbers(expected), visibleNumbers(text), 'Winter clock numbers changed: ' + name + ' / ' + profile);
+  }
 }
 for (const [key, value] of Object.entries(en)) {
   context.I18N.setLang('en');
@@ -58,7 +70,11 @@ assert.match(storeBody, /造价：6 木板[，,] ?6 石头。/);
 assert.ok(!storeBody.includes('停工'), 'Construction costs must not translate as idle status');
 for (const entry of localEntries.filter(e => e.id.startsWith('b:'))) {
   const raw = rawEntries.find(e => e.id === entry.id).body;
-  const worker = raw.match(/ Работает[^<]*/);
-  if (worker) assert.ok(entry.body.includes(worker[0]), 'Cost translation must preserve the worker clause: ' + entry.id);
+  const body = context.I18N.trHtml(entry.body);
+  assert.ok(!/[А-Яа-яЁё]/.test(body), 'Building help must translate collapsed details too: ' + entry.id + '\n' + body);
+  const productionNumbers = s => visibleNumbers((s.match(/<p class="gk">[\s\S]*?<\/p>/g) || []).join(''));
+  assert.deepEqual(productionNumbers(body), productionNumbers(raw), 'Building cost/recipe numbers changed: ' + entry.id);
+  if (raw.includes(' Работает:')) assert.ok(body.includes('工作人员：'), 'Worker requirement missing: ' + entry.id);
+  if (raw.includes(' Работает сам.')) assert.ok(body.includes('自动运作'), 'Automatic production missing: ' + entry.id);
 }
 console.log('Chinese catalogue: ' + report.chineseKeys + ' keys, ' + htmlFixtures.length + ' rendered HTML fixtures, ' + seasonFixtures.length + ' season tooltips, exact placeholders, valid locale and preserved English/Russian lookup.');

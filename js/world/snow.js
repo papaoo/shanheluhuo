@@ -301,7 +301,7 @@ function seaChip() {
   const el = document.getElementById('clock');
   if (!el || !Game.sea) return;
   const sec = Math.floor(Game.time), mm = String(Math.floor(sec / 60)).padStart(2, '0'), ss = String(sec % 60).padStart(2, '0');
-  const txt = `${isNightNow() ? '☾' : isEveningNow() ? '◐' : '☀'} ${mm}:${ss} · ${seaChipText()}`;
+  const txt = `${isNightNow() ? '☾' : isEveningNow() ? '◐' : '☀'} ${mm}:${ss} · ${t(seaChipText())}`;
   if (el.textContent !== txt) el.textContent = txt;
   if (Game.time - (seaChip.tt || -9) > 3) { seaChip.tt = Game.time; el.title = seaChipTip(); }
 }

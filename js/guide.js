@@ -241,8 +241,11 @@ function guideEntries() {
   for (const t of BUILD_ORDER) {
     const d = BUILDINGS[t];
     const cost = Object.entries(d.cost).map(([g, n]) => `${n} ${GOODS[g].name.toLowerCase()}`).join(', ');
-    const costText = typeof I18N !== 'undefined' && I18N.lang === 'zh-CN' ? window.t('Стоимость: {0}.', cost) : `Стоит: ${cost}.`;
-    let body = `<p>${d.desc}</p><p class="gk">${costText}${d.worker ? ` Работает: ${UNIT_TYPES[d.worker].name.toLowerCase()}.` : d.auto ? ' Работает сам.' : ''}</p>`;
+    const chinese = typeof I18N !== 'undefined' && I18N.lang === 'zh-CN';
+    const costText = chinese ? window.t('Стоимость: {0}.', cost) : `Стоит: ${cost}.`;
+    const workerText = d.worker ? (chinese ? ' ' + window.t('Работает: {0}.', UNIT_TYPES[d.worker].name) : ` Работает: ${UNIT_TYPES[d.worker].name.toLowerCase()}.`)
+      : d.auto ? (chinese ? ' ' + window.t('Работает сам.') : ' Работает сам.') : '';
+    let body = `<p>${d.desc}</p><p class="gk">${costText}${workerText}</p>`;
     const rc = (d.recipes || []).map(r => `${Object.entries(r.in).map(([g, n]) => n + '×' + GOODS[g].name).join(' + ') || 'из недр'} → ${Object.entries(r.out).map(([g, n]) => n + '×' + GOODS[g].name).join(' + ')}`);
     if (rc.length) body += `<p class="gk">${rc.join('<br>')}</p>`;
     E.push({ id: 'b:' + t, cat: 'b', title: d.name, sub: d.cat, body, sarc: SARC_B[t] || SARC_CAT[d.cat] || '', icon: ['b', t] });
