@@ -64,6 +64,9 @@ async function uiNode(label, predicate, timeout = 20000) {
 }
 async function start() { await shell('am', 'start', '-W', '-n', PACKAGE + '/ru.oldgold.game.MainActivity'); }
 async function dismissSystemIntro() {
+  // Once Android's one-time overlay has been acknowledged, do not ask
+  // UIAutomator to wait for an idle, continuously animated game menu.
+  if (await shell('settings', 'get', 'secure', 'immersive_mode_confirmations') === 'confirmed') return false;
   const current = await ui('system-intro');
   const gotIt = current.find(n => n.package === 'com.android.systemui' && (/:id\/ok$/.test(n['resource-id'] || '') || /^(Got it|知道了|确定)$/.test(n.text || '')));
   if (gotIt) { await screenshot('00-android-fullscreen-intro'); await tap(gotIt); await delay(300); }

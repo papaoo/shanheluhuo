@@ -126,7 +126,9 @@ async function checkApk(apk, { webRoot = path.join(ROOT, 'mobile/www') } = {}) {
     report.frameBankAliases.push({ source, path: target, sha256: sourceSha256 });
   }
   const extraPublic = new Set(['build-manifest.json', 'cordova.js', 'cordova_plugins.js']);
-  const nativeAssets = new Set(['assets/capacitor.config.json', 'assets/capacitor.plugins.json', 'assets/native-bridge.js']);
+  const nativeAssets = new Set(['assets/capacitor.config.json', 'assets/capacitor.plugins.json', 'assets/native-bridge.js',
+    // AGP generates these ART optimization profiles in release APKs.
+    'assets/dexopt/baseline.prof', 'assets/dexopt/baseline.profm']);
   for (const [name, item] of entries) {
     if (name.endsWith('/')) continue;
     if (forbiddenFile(name)) report.forbiddenFiles.push(name);
