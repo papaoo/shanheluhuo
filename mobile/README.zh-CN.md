@@ -31,4 +31,4 @@ Windows 示例：
 
 使用 `-Configuration Debug` 可生成供 WebView 调试的版本；最终交付使用 Release。提供私有签名配置时，两者用同一个签名，便于检验覆盖安装的数据保留。
 
-资源构建说明见 [WEB_BUNDLE.zh-CN.md](../docs/localization/WEB_BUNDLE.zh-CN.md)。验收范围、性能和局限以本次交付的验收报告为准；模拟器功能检查不能推断真机帧率、发热或耗电。
+资源构建说明见 [WEB_BUNDLE.zh-CN.md](../docs/localization/WEB_BUNDLE.zh-CN.md)。本次结果见 [APK 验收报告](../docs/localization/APK_ACCEPTANCE.zh-CN.md)：汉化、离线及存档流程通过，普通视角绘制压力预算仍有一项未达标。模拟器功能检查不能推断真机帧率、发热或耗电。
