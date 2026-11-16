@@ -30,8 +30,8 @@
     q = normalize(q);
     if (q) { try { localStorage.setItem(LS, q); } catch (e) {} return q; }
     try { const s = normalize(localStorage.getItem(LS)); if (s) return s; } catch (e) {}
-    const nav = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
-    return normalize(nav) || 'en';
+    // This edition defaults to Simplified Chinese on every browser.
+    return 'zh-CN';
   }
 
   const I = g.I18N = {

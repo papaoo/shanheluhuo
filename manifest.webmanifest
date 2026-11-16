@@ -1,7 +1,7 @@
 {
   "name": "OldGold",
   "short_name": "OldGold",
-  "description": "Gnome economy: build a village, feed the gnomes, lead the hero. Гномья экономика: строй деревню, корми жителей, веди героя",
+  "description": "矮人村庄经营：建设村庄，照料居民，带领英雄冒险。",
   "start_url": "./index.html",
   "display": "fullscreen",
   "orientation": "any",
@@ -34,7 +34,7 @@
     }
   ],
   "id": "./",
-  "lang": "ru",
+  "lang": "zh-CN",
   "categories": [
     "games"
   ]

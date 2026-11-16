@@ -68,13 +68,17 @@ const en = { 'Склад': 'Storehouse', 'Гном': 'Gnome', 'Построен�
 let count = 0;
 function check(label, fn) { fn(); count++; console.log('✓ ' + label); }
 
-check('URL > saved preference > browser, canonical zh aliases and storage denial', () => {
+check('URL > saved preference > Chinese default, independent of browser language', () => {
   assert.equal(boot({ query: '?lang=zh-Hans', stored: 'ru', nav: 'en-US' }).I18N.lang, 'zh-CN');
   assert.equal(boot({ query: '?lang=bad', stored: 'zh', nav: 'ru' }).I18N.lang, 'zh-CN');
   assert.equal(boot({ stored: 'en', nav: 'zh-CN' }).I18N.lang, 'en');
-  assert.equal(boot({ nav: 'zh-SG' }).I18N.lang, 'zh-CN');
-  assert.equal(boot({ nav: 'ru-RU' }).I18N.lang, 'ru');
-  assert.equal(boot({ nav: 'de-DE' }).I18N.lang, 'en');
+  assert.equal(boot({ query: '?lang=ru', stored: 'zh-CN' }).I18N.lang, 'ru');
+  assert.equal(boot({ stored: 'ru' }).I18N.lang, 'ru');
+  for (const nav of ['zh-SG', 'en-US', 'ru-RU', 'de-DE', '']) {
+    assert.equal(boot({ nav }).I18N.lang, 'zh-CN');
+    assert.equal(boot({ nav, noStorage: true }).I18N.lang, 'zh-CN');
+  }
+  assert.equal(boot({ query: '?lang=bad', stored: 'bad', nav: 'en' }).I18N.lang, 'zh-CN');
   assert.equal(boot({ query: '?lang=zh', noStorage: true }).I18N.lang, 'zh-CN');
 });
 check('dictionaries load by selected locale; Russian remains source-only', () => {
@@ -82,8 +86,8 @@ check('dictionaries load by selected locale; Russian remains source-only', () =>
   assert.equal(c.scripts.length, 35);
   assert.ok(c.scripts.every(s => s.includes('js/i18n/zh-CN-')));
   assert.ok(c.scripts.at(-1).includes('zh-CN-extra.js'));
-  assert.ok(boot({ nav: 'en' }).scripts.every(s => s.includes('js/i18n/en-')));
-  assert.equal(boot({ nav: 'ru' }).scripts.length, 0);
+  assert.ok(boot({ query: '?lang=en' }).scripts.every(s => s.includes('js/i18n/en-')));
+  assert.equal(boot({ query: '?lang=ru' }).scripts.length, 0);
   assert.equal(c.document.documentElement.lang, 'zh-CN');
 });
 check('three-language cycle retains native labels and preserves auto-save behaviour', () => {
@@ -143,7 +147,7 @@ check('DOM setters never alter protected nodes or Chinese input data', () => {
   const node = c.document.createTextNode('Склад'); assert.equal(node.data, 'Склад');
   node.parentElement = pre; c.I18N.walk(node); assert.equal(node.data, 'Склад');
   node.parentElement = new c.classes.HTMLElement(); c.I18N.walk(node); assert.equal(node.data, '仓库');
-  const english = boot({ nav: 'en' }); english.I18N.add('en', en);
+  const english = boot({ query: '?lang=en' }); english.I18N.add('en', en);
   const enInput = new english.classes.HTMLInputElement(); enInput.value = 'Гном'; assert.equal(enInput.value, 'Gnome');
 });
 check('Canvas measurement and both drawing paths share CJK font without leaking state', () => {
@@ -153,7 +157,7 @@ check('Canvas measurement and both drawing paths share CJK font without leaking 
   assert.equal(ctx.font, original); assert.ok(c.drawn.every(x => x.s === '仓库' && x.font.includes('Noto Sans CJK SC')));
   assert.equal(new Set(c.drawn.map(x => x.font)).size, 1);
   c.confirm('Нет еды'); assert.equal(c.context.confirmed, '没有食物');
-  const english = boot({ nav: 'en' }); const ec = new english.CanvasRenderingContext2D(); ec.fillText('Hello', 0, 0);
+  const english = boot({ query: '?lang=en' }); const ec = new english.CanvasRenderingContext2D(); ec.fillText('Hello', 0, 0);
   assert.equal(english.drawn[0].font, ec.font);
 });
 check('Chinese wrapping translates before measuring, preserves content and explicit lines', () => {
@@ -181,7 +185,7 @@ check('user names matching source keys remain literal in HTML, native dialogs an
     ctx.fillText('Склад', 0, 0);
     assert.equal(c.drawn.at(-1).s, '仓库', 'name protection must not leak into system labels');
   }
-  const english = boot({ nav: 'en' }); english.I18N.add('en', en);
+  const english = boot({ query: '?lang=en' }); english.I18N.add('en', en);
   assert.equal(english.I18N.userHTML('Склад'), 'Склад');
   assert.equal(english.I18N.trHtml(english.I18N.userHTML('Склад')), 'Storehouse');
   const ctx = new english.CanvasRenderingContext2D();
