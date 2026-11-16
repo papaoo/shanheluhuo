@@ -617,16 +617,21 @@ function startGame() {
 }
 
 // Телефонный браузер может внезапно закрыть вкладку: сохраняемся при сворачивании и закрытии
-{
-  const saveOnLeave = () => {
-    if (Game.stress || !Game.units || !Game.units.length) return;
-    if (typeof StartMenu !== 'undefined' && StartMenu.open) return;       // не затираем автосохранение, пока на заставке
-    if (Game.goal && Game.goal.over && Game.goal.over.res === 'lose') return;   // проигранную деревню (goal.js стёр её автосейв) не воскрешаем
-    if (saveOnLeave.t && Date.now() - saveOnLeave.t < 1500) return;       // события закрытия приходят пачкой (скрытие, pagehide, freeze) — пишем один раз
-    saveOnLeave.t = Date.now();
-    saveGame('auto');
-  };
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnLeave(); });
-  window.addEventListener('pagehide', saveOnLeave);
-  document.addEventListener('freeze', saveOnLeave);   // Chrome на Android замораживает фоновую вкладку без pagehide
+// Native App events and browser visibility events share this successful-save gate.
+const leaveSaves = new WeakMap();
+function saveOnLeave() {
+  if (typeof Game === 'undefined' || Game.stress || !Game.units || !Game.units.length) return true;
+  if (typeof StartMenu !== 'undefined' && StartMenu.open) return true;       // не затираем автосохранение, пока на заставке
+  if (Game.goal && Game.goal.over && Game.goal.over.res === 'lose') return true;   // проигранную деревню не воскрешаем
+  // resetGameState keeps the Game singleton, but always replaces its units.
+  const game = Game, units = game.units, now = Date.now(), last = leaveSaves.get(units);
+  if (last && last.game === game && now >= last.at && now - last.at < 1500) return true;
+  try {
+    if (!saveGame('auto')) return false;
+    leaveSaves.set(units, { game, at: Date.now() });
+    return true;
+  } catch (e) { return false; }   // a later lifecycle event can retry a failed write
 }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnLeave(); });
+window.addEventListener('pagehide', saveOnLeave);
+document.addEventListener('freeze', saveOnLeave);   // Chrome на Android замораживает фоновую вкладку без pagehide

@@ -6,14 +6,15 @@ const fs = require('node:fs'), path = require('node:path'), vm = require('node:v
 const read = p => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 
 function boot(native = true, asyncListeners = false) {
-  const listeners = {}, calls = [], store = new Map();
-  const ctx = { console: { warn() {} }, document: { documentElement: { classList: { add() {} } } },
+  const listeners = {}, webListeners = {}, calls = [], store = new Map();
+  const ctx = { console: { warn() {} }, document: { documentElement: { classList: { add() {} } }, addEventListener: (name, fn) => { webListeners[name] = fn; } },
+    addEventListener: (name, fn) => { webListeners[name] = fn; },
     Game: { units: [{}], paused: false }, StartMenu: { open: false }, handled: false,
     saveOK: true, accepted: true, result: { saved: true },
     t: s => s, confirm: s => { calls.push(['confirm', s]); return ctx.accepted; },
     alert: s => calls.push(['alert', s]), wmBack: () => ctx.handled,
     audioHide: () => calls.push(['audio', 'hide']), audioShow: () => calls.push(['audio', 'show']),
-    saveGame: slot => { calls.push(['save', slot]); return ctx.saveOK; },
+    saveGame: slot => { calls.push(['save', slot]); if (ctx.saveError) throw ctx.saveError; return ctx.saveOK; },
     localStorage: { getItem: k => store.get(k) || null },
   };
   ctx.window = ctx;
@@ -22,8 +23,10 @@ function boot(native = true, asyncListeners = false) {
     StatusBar: { hide() {} },
     OldGoldFiles: { saveFile: async options => { calls.push(['file', options]); if (ctx.error) throw ctx.error; return ctx.result; } },
   } };
-  vm.createContext(ctx); vm.runInContext(read('js/native.js'), ctx);
-  return { ctx, calls, listeners, store };
+  vm.createContext(ctx);
+  const main = read('js/main.js'); vm.runInContext(main.slice(main.indexOf('const leaveSaves =')), ctx);
+  vm.runInContext(read('js/native.js'), ctx);
+  return { ctx, calls, listeners, webListeners, store };
 }
 
 async function main() {
@@ -72,6 +75,44 @@ async function main() {
     assert.ok(calls.some(c => c[0] === 'audio' && c[1] === 'show'));
     ctx.Game.paused = true; listeners.appStateChange({ isActive: false }); listeners.appStateChange({ isActive: true });
     assert.equal(ctx.Game.paused, true);
+  });
+  await check('native and browser leave events share one successful save in either order', () => {
+    for (const nativeFirst of [false, true]) {
+      const { ctx, calls, listeners, webListeners } = boot(); ctx.document.visibilityState = 'hidden';
+      if (nativeFirst) { listeners.appStateChange({ isActive: false }); webListeners.visibilitychange(); }
+      else { webListeners.visibilitychange(); listeners.appStateChange({ isActive: false }); }
+      webListeners.pagehide(); webListeners.freeze();
+      assert.equal(calls.filter(c => c[0] === 'save').length, 1);
+      assert.equal(ctx.Game.paused, true);
+    }
+  });
+  await check('failed or throwing leave saves can be retried by the next lifecycle event', () => {
+    for (const nativeFirst of [false, true]) for (const throws of [false, true]) {
+      const { ctx, calls, listeners, webListeners } = boot(); ctx.document.visibilityState = 'hidden';
+      ctx.saveOK = false; ctx.saveError = throws ? Error('Storage unavailable') : null;
+      if (nativeFirst) listeners.appStateChange({ isActive: false }); else webListeners.visibilitychange();
+      assert.equal(calls.filter(c => c[0] === 'save').length, 1);
+      ctx.saveOK = true; ctx.saveError = null;
+      if (nativeFirst) webListeners.visibilitychange(); else listeners.appStateChange({ isActive: false });
+      webListeners.freeze(); assert.equal(calls.filter(c => c[0] === 'save').length, 2);
+      assert.equal(ctx.saveOnLeave(), true); assert.equal(calls.filter(c => c[0] === 'save').length, 2);
+    }
+  });
+  await check('leave save window expires and never suppresses a different Game instance', () => {
+    const { ctx, calls } = boot(); let now = 10000; ctx.Date = { now: () => now };
+    assert.equal(ctx.saveOnLeave(), true); now += 1499; ctx.saveOnLeave();
+    assert.equal(calls.filter(c => c[0] === 'save').length, 1);
+    now++; ctx.saveOnLeave(); assert.equal(calls.filter(c => c[0] === 'save').length, 2);
+    ctx.Game = { units: [{}], paused: false }; ctx.saveOnLeave();
+    assert.equal(calls.filter(c => c[0] === 'save').length, 3);
+    // The actual game is a singleton: resetGameState/load replaces its units.
+    ctx.Game.units = [{}]; ctx.saveOnLeave();
+    assert.equal(calls.filter(c => c[0] === 'save').length, 4);
+  });
+  await check('confirmed top-level exit forces a save even inside the leave-save window', async () => {
+    const { ctx, calls, listeners } = boot(); ctx.saveOnLeave();
+    await listeners.backButton(); assert.equal(calls.filter(c => c[0] === 'save').length, 2);
+    assert.equal(calls.at(-1)[0], 'exit');
   });
   await check('start menu and lost games do not overwrite autosaves on background/exit', async () => {
     for (const mode of ['menu', 'lose']) {

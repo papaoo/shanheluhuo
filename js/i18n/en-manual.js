@@ -217,5 +217,8 @@ I18N.add('en', {
   "Выйти из игры?": "Exit the game?",
   "Не удалось сохранить игру. Освободите место и попробуйте снова.": "Could not save the game. Free up storage space and try again.",
   "Файл сохранён.": "File saved.",
-  "Не удалось сохранить файл.": "Could not save the file. Please try again."
+  "Не удалось сохранить файл.": "Could not save the file. Please try again.",
+  "У каждого очага начинается история": "Every story begins at a hearth",
+  "Подготавливаем игру…": "Preparing the game…",
+  "Открыть последнее сохранение": "Open the latest save"
 });

@@ -17,7 +17,7 @@
 
 ## 构建
 
-需要 Node.js 22 或更高版本、JDK 21、Android SDK（平台 36、platform-tools、构建工具），使用项目内 Gradle Wrapper。先在此目录执行 `npm ci`。根目录的 `npm run check`、`npm run test:i18n`、`npm run test:android` 用于回归；`npm run test:android:web` 检查打包后的网页内容。
+需要 Node.js 22 或更高版本、JDK 21、Android SDK（平台 36、platform-tools、构建工具），使用项目内 Gradle Wrapper。先在此目录执行 `npm ci`。根目录的 `npm run check`、`npm run test:i18n`、`npm run test:android` 用于回归；`npm run test:android:web` 检查打包后的网页内容。`npm run test:i18n:startup -- --web-root mobile/www` 刻意延迟加载，检查首屏不会提前显示俄文，同时保持英文、俄文选择有效。
 
 Windows 示例：
 

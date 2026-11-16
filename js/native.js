@@ -35,7 +35,7 @@
       Promise.resolve(app.addListener('appStateChange', ({ isActive }) => {
         if (!isActive) {
           if (!background) {
-            save();
+            if (typeof saveOnLeave === 'function') saveOnLeave(); else save();
             background = { game: typeof Game !== 'undefined' ? Game : null, paused: typeof Game !== 'undefined' && Game.paused };
             if (background.game) background.game.paused = true;
           }

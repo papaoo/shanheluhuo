@@ -1,7 +1,12 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" class="i18n-pending">
 <head>
 <meta charset="utf-8">
+<style>
+/* Static source-language text stays hidden until the selected dictionary has
+   translated it. The menu can then appear before the game scripts finish. */
+html.i18n-pending #loading, html.i18n-pending #loading * { visibility: hidden !important; }
+</style>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -211,6 +216,18 @@
 })();
 </script>
 <script src="js/i18n.js"></script>
+<script>
+// document.write dictionaries from i18n.js finish before this parser step.
+// Do not wait for all game scripts / DOMContentLoaded to translate the menu.
+if (window.I18N) {
+  if (I18N.walk) I18N.walk(document.documentElement);
+  document.querySelectorAll('.lang-name').forEach(label => {
+    label.setAttribute('translate', 'no');
+    label.textContent = I18N.other;
+  });
+  document.documentElement.classList.remove('i18n-pending');
+}
+</script>
 <script src="js/fantasy-start-screen.js" async></script>
 <script src="js/crashlog.js"></script>
 <script src="js/telemetry.js"></script>

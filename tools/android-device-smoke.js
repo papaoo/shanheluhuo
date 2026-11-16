@@ -90,7 +90,10 @@ async function connect() {
   page.on('response', response => { if (response.url().startsWith('https://localhost/') && response.status() >= 400) { report.failedResources.push({ url: response.url(), status: response.status() }); persist(); } });
   // Keep a real JS confirmation open for the native-button acceptance step.
   page.on('dialog', dialog => { dialogs.push(dialog); report.dialogs.push({ type: dialog.type(), message: dialog.message() }); persist(); });
-  await page.waitForFunction(() => typeof I18N !== 'undefined' && typeof StartMenu !== 'undefined');
+  // Functional native checks start after all classic scripts and the bridge
+  // have loaded. Early localized startup is exercised by its separate test.
+  await page.waitForFunction(() => document.readyState !== 'loading' && typeof I18N !== 'undefined' &&
+    typeof StartMenu !== 'undefined' && window.OldGoldAndroid && typeof OldGoldAndroid.saveFile === 'function', null, { timeout: 180000 });
 }
 async function gameplay() {
   await page.waitForFunction(name => !StartMenu.open && Game.hero && Game.hero.hero.name === name, HERO, { timeout: 180000 });
@@ -192,11 +195,14 @@ async function main() {
     });
     const cases = [];
     for (const paused of [false, true]) {
+      // Separate the two test backgrounds beyond the shared 1500ms gate.
+      await delay(1600);
       const before = await page.evaluate(p => { Game.paused = p; window.__apkSaves.length = 0; return saveMeta('auto')?.at || 0; }, paused);
       await shell('input', 'keyevent', 'KEYCODE_HOME'); await delay(1200); await start();
       await page.waitForFunction(() => !document.hidden);
       const state = await page.evaluate(() => ({ paused: Game.paused, autoAt: saveMeta('auto')?.at || 0, audio: AudioCore.ctx && AudioCore.ctx.state, hiddenAudio: AudioCore.hiddenAt > 0, events: window.__apkEvents.slice(), saves: window.__apkSaves.slice() }));
       assert.equal(state.paused, paused); assert(state.autoAt > before, 'Home must persist a new autosave');
+      assert.equal(state.saves.filter(s => s.slot === 'auto').length, 1, 'Native and browser background events must share one write');
       assert(state.events.some(e => !e.active && e.paused), 'Native inactive event must pause'); assert.equal(state.hiddenAudio, false);
       cases.push({ originalPause: paused, before, ...state });
     }
@@ -207,10 +213,14 @@ async function main() {
     const before = await page.evaluate(() => ({ name: Game.hero.hero.name, manual: localStorage.getItem('feod.save.manual'), auto: localStorage.getItem('feod.save.auto') }));
     await shell('am', 'force-stop', PACKAGE); await start(); await connect();
     await page.waitForSelector('#start-menu [data-sm="continue"]:not([disabled])', { timeout: 180000 });
-    const after = await page.evaluate(() => ({ manual: localStorage.getItem('feod.save.manual'), auto: localStorage.getItem('feod.save.auto'), language: I18N.lang }));
+    await page.waitForFunction(() => document.readyState !== 'loading' &&
+      document.querySelector('#start-menu [data-sm="new"] b')?.textContent === '新游戏', null, { timeout: 180000 });
+    const after = await page.evaluate(() => ({ manual: localStorage.getItem('feod.save.manual'), auto: localStorage.getItem('feod.save.auto'), language: I18N.lang,
+      readyState: document.readyState, missing: I18N.missing() }));
     assert.equal(after.manual, before.manual); assert.equal(after.auto, before.auto); assert.equal(after.language, 'zh-CN');
+    const visibleText = await inspectChinese('reopen-menu');
     await screenshot('05-reopen-continue'); await page.click('#start-menu [data-sm="continue"]'); await gameplay();
-    return { language: after.language, name: before.name, manualSha256: sha(after.manual), autoSha256: sha(after.auto) };
+    return { language: after.language, readyState: after.readyState, missing: after.missing, visibleText, name: before.name, manualSha256: sha(after.manual), autoSha256: sha(after.auto) };
   });
   await step('real SAF save and byte-identical JSON', async () => {
     await closePanels(); await page.evaluate(() => saveFileOpen());

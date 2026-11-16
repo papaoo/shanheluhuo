@@ -297,7 +297,7 @@ section = 'миграции';
   // закрытие вкладки (телефон): сохранение на скрытии, pagehide и freeze
   const main = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
   ok(/visibilitychange[\s\S]{0,120}saveOnLeave/.test(main) && /'pagehide', saveOnLeave/.test(main) && /'freeze', saveOnLeave/.test(main), 'main.js: сохранение при скрытии/закрытии/заморозке вкладки не подключено');
-  ok(/saveGame\('auto'\)/.test(main.slice(main.indexOf('const saveOnLeave'), main.indexOf('const saveOnLeave') + 700)), 'saveOnLeave не вызывает saveGame');
+  ok(/saveGame\('auto'\)/.test(main.slice(main.indexOf('function saveOnLeave'), main.indexOf("document.addEventListener('visibilitychange'"))), 'saveOnLeave не вызывает saveGame');
 }
 
 // ---------- 5. Мир коопа на сервере
