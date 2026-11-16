@@ -210,3 +210,12 @@ I18N.add('en', {
   'Вход в курган': 'The barrow entrance',
   'Над курганом Курганного князя теперь написано, когда в него можно войти: днём — «вход ночью», ночью — «вдвоём, герои от 3 уровня», а когда горят синие огни — «Вход в курган». Нажмите на курган — герой подойдёт ко входу и либо разбудит князя, либо скажет, чего не хватает. В общей деревне работает так же: считает сервер, все видят одно и то же.': 'The Barrow Prince’s barrow now shows when you can enter: by day — "entrance at night", at night — "two heroes, level 3+", and when the blue lights burn — "Barrow entrance". Tap the barrow and your hero walks to the entrance and either wakes the Prince or tells you what is missing. Works the same in the shared village: the server decides, everyone sees the same thing.',
 });
+
+// Android offline edition: native save/export confirmations.
+I18N.add('en', {
+  "Сохранить игру и выйти?": "Save the game and exit?",
+  "Выйти из игры?": "Exit the game?",
+  "Не удалось сохранить игру. Освободите место и попробуйте снова.": "Could not save the game. Free up storage space and try again.",
+  "Файл сохранён.": "File saved.",
+  "Не удалось сохранить файл.": "Could not save the file. Please try again."
+});

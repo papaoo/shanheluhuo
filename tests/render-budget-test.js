@@ -4,12 +4,20 @@
 //  • сборку тяжёлых кадров нечисти ×3 — тролль, призрак (на телефоне 0.11.71 они строились по секунде прямо в кадре);
 //  • процессорное время render() на сейве при обычном масштабе и при отдалении.
 // Новая фича, которая утяжелит кадр или арт, уронит тест, а не fps у тестеров.
-// Запуск: node tests/render-budget-test.js [--report]   (npm run test:render; нужен tools/browsers: cd tools/browsers && npm ci)
+// Запуск: node tests/render-budget-test.js [--report] [--lang zh-CN] [--web-root mobile/www] [--write report.json]
 const path = require('path'), fs = require('fs'), http = require('http'), zlib = require('zlib');
 const ROOT = path.join(__dirname, '..');
 const REPORT = process.argv.includes('--report');
 const langArg = process.argv.indexOf('--lang');
 const LANG = langArg >= 0 ? process.argv[langArg + 1] : '';
+const rootArg = process.argv.indexOf('--web-root'), writeArg = process.argv.indexOf('--write');
+if ((rootArg >= 0 && (!process.argv[rootArg + 1] || process.argv[rootArg + 1].startsWith('--'))) ||
+    (writeArg >= 0 && (!process.argv[writeArg + 1] || process.argv[writeArg + 1].startsWith('--')))) {
+  throw new Error('--web-root and --write require a path');
+}
+const WEB_ROOT = rootArg >= 0 ? path.resolve(process.argv[rootArg + 1]) : ROOT;
+const WRITE = writeArg >= 0 ? path.resolve(process.argv[writeArg + 1]) : null;
+if (!fs.existsSync(path.join(WEB_ROOT, 'index.html'))) throw new Error('Missing index.html in ' + WEB_ROOT);
 // Пороги в единицах машины (замер 28.10, CPU ×4: тролль 150–180, призрак 95–115, render z=1 ~11, z=0.5 ~18; запас ×2.
 // До оптимизации 0.11.89 тролль был ~1010, призрак ~210 — такие цифры тест ловит)
 const BUDGET = { troll: 350, ghost: 230, render1: 25, render05: 40 };
@@ -28,8 +36,8 @@ function serve() {
   return new Promise(res => {
     const s = http.createServer((q, r) => {
       let p = decodeURIComponent(q.url.split('?')[0]); if (p.endsWith('/')) p += 'index.html';
-      const f = path.join(ROOT, p);
-      if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end('no'); }
+      const f = path.resolve(WEB_ROOT, '.' + p);
+      if (!f.startsWith(WEB_ROOT + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end('no'); }
       r.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(r);
     }).listen(0, '127.0.0.1', () => res(s));
   });
@@ -78,11 +86,25 @@ function serve() {
     const cal = Math.min(c0, calib()), u = ms => +(ms / cal * 10).toFixed(2);
     return { cal: +cal.toFixed(1), troll: u(med(troll)), ghost: u(med(ghost)), render1: u(r1), render05: u(r05), ms: { troll: Math.round(med(troll)), ghost: Math.round(med(ghost)), r1: +r1.toFixed(1), r05: +r05.toFixed(1) } };
   });
+  const browserVersion = br.version();
   await br.close(); srv.close();
   console.log(`Проверка: эталон ${m.cal} мс; тролль ${m.troll} ед. (${m.ms.troll} мс), призрак ${m.ghost} (${m.ms.ghost} мс), render z=1 ${m.render1} (${m.ms.r1} мс), z=0.5 ${m.render05} (${m.ms.r05} мс)`);
   const fails = [];
   if (!REPORT) for (const k of Object.keys(BUDGET)) if (m[k] > BUDGET[k]) fails.push(`${k}: ${m[k]} > ${BUDGET[k]} ед. машины`);
   if (errs.length) fails.push('ошибки страницы: ' + errs.slice(0, 3).join(' | '));
+  if (WRITE) {
+    const git = args => require('child_process').execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
+    const manifestPath = path.join(WEB_ROOT, 'build-manifest.json');
+    const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : null;
+    const manifestSha256 = manifest ? require('crypto').createHash('sha256').update(fs.readFileSync(manifestPath)).digest('hex') : null;
+    const result = { capturedAt: new Date().toISOString(), sourceCommit: git(['rev-parse', 'HEAD']),
+      trackedChanges: git(['diff', '--name-only']), webRoot: WEB_ROOT, language: LANG || 'default', browser: browserVersion,
+      bundle: manifest ? { sourceCommit: manifest.sourceCommit, manifestSha256, files: manifest.files.length } : null,
+      profile: { width: 386, height: 837, deviceScaleFactor: 3, cpuThrottling: 4 },
+      metrics: m, budget: BUDGET, budgetExceeded: Object.keys(BUDGET).filter(k => m[k] > BUDGET[k]), reportOnly: REPORT, errors: errs, failures: fails };
+    fs.mkdirSync(path.dirname(WRITE), { recursive: true });
+    fs.writeFileSync(WRITE, JSON.stringify(result, null, 2) + '\n');
+  }
   for (const f of fails) console.log('  ✗ ' + f);
   console.log(fails.length ? `Проверка: провалов ${fails.length}` : 'Проверка: бюджет отрисовки — в порядке');
   process.exit(fails.length ? 1 : 0);

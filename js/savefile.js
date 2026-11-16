@@ -48,7 +48,15 @@ function saveFileOpen() {
       t.innerHTML = '<b></b><br><span style="opacity:.8;font-size:12px"></span>';
       t.firstChild.textContent = name; t.lastChild.textContent = d;
       row.appendChild(t);
-      row.appendChild(mk('Скачать файл', () => { msg.textContent = saveExport(slot) ? 'Файл сохранён (на телефоне — через «Поделиться»).' : 'Не удалось скачать'; }));
+      row.appendChild(mk('Скачать файл', async e => {
+        const button = e.currentTarget; button.disabled = true;
+        try {
+          const result = await saveExport(slot);
+          msg.textContent = window.t(result === null ? 'Отмена' : result
+            ? (window.OldGoldAndroid ? 'Файл сохранён.' : 'Файл сохранён (на телефоне — через «Поделиться»).')
+            : (window.OldGoldAndroid ? 'Не удалось сохранить файл.' : 'Не удалось скачать'));
+        } finally { button.disabled = false; }
+      }));
       if (/\.pre$/.test(slot)) row.appendChild(mk('Вернуть как ручное', () => {
         const raw = localStorage.getItem(SAVE_KEY + slot), r = saveImportText(raw, 'manual');
         msg.textContent = r.ok ? 'Копия возвращена в «Ручное сохранение». Нажмите «Загрузить».' : 'Не удалось: ' + r.msg;

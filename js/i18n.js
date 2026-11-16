@@ -262,14 +262,24 @@
 
   // Canvas text is measured and drawn with the same CJK fallback, without
   // changing the font kept by the game's renderer for its next drawing pass.
+  const canvasFonts = new Map();
   I.canvasFont = function (font) {
     if (I.lang !== 'zh-CN') return font;
-    return String(font).replace(/((?:\d*\.)?\d+(?:px|pt|em|rem|%)\s+(?:\/\s*[^\s]+\s+)?)(.+)$/, (m, size, family) =>
+    const key = String(font);
+    if (canvasFonts.has(key)) return canvasFonts.get(key);
+    const localized = key.replace(/((?:\d*\.)?\d+(?:px|pt|em|rem|%)\s+(?:\/\s*[^\s]+\s+)?)(.+)$/, (m, size, family) =>
       size + (family.includes('Noto Sans CJK SC') ? family : CJK_FONT + ', ' + family));
+    if (canvasFonts.size >= 128) canvasFonts.clear();
+    canvasFonts.set(key, localized);
+    return localized;
   };
-  const graphemes = s => typeof Intl !== 'undefined' && Intl.Segmenter
-    ? Array.from(new Intl.Segmenter(I.locale(), { granularity: 'grapheme' }).segment(s), x => x.segment)
-    : Array.from(s);
+  const segmenters = new Map();
+  const graphemes = s => {
+    if (typeof Intl === 'undefined' || !Intl.Segmenter) return Array.from(s);
+    const locale = I.locale();
+    if (!segmenters.has(locale)) segmenters.set(locale, new Intl.Segmenter(locale, { granularity: 'grapheme' }));
+    return Array.from(segmenters.get(locale).segment(s), x => x.segment);
+  };
   // Unlike split(' '), this can wrap Chinese dialogue. Keep Latin words,
   // shortcuts and grapheme clusters intact where they fit; respect newlines.
   I.wrapText = function (ctx, text, width) {
@@ -396,8 +406,11 @@
     const f = C2[n];
     C2[n] = function (s) {
       if (!userCanvasDepth && typeof s === 'string' && CYR.test(s)) arguments[0] = tr(s);
+      if (I.lang !== 'zh-CN') return f.apply(this, arguments);
       const original = this.font;
-      this.font = I.canvasFont(original);
+      const localized = I.canvasFont(original);
+      if (localized === original) return f.apply(this, arguments);
+      this.font = localized;
       try { return f.apply(this, arguments); } finally { this.font = original; }
     };
   }

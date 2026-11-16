@@ -458,6 +458,7 @@ function saveImportText(raw, slot = 'manual') {
 
 // Скачать текст файлом; на телефоне — через «Поделиться», если браузер умеет отдавать файлы
 function saveDownload(name, text) {
+  if (typeof window !== 'undefined' && window.OldGoldAndroid) return window.OldGoldAndroid.saveFile(name, text);
   try {
     if (typeof File === 'function' && navigator.canShare && navigator.share) {
       const f = new File([text], name, { type: 'application/json' });
@@ -490,7 +491,7 @@ function saveBrokenNotice(text, raw) {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap';
     const mk = (label, fn) => { const b = document.createElement('button'); b.textContent = label; b.style.cssText = 'padding:6px 14px'; b.onclick = fn; row.appendChild(b); };
-    if (raw) mk('Скачать файл сейва', () => saveDownload('oldgold-broken-save.json', raw));
+    if (raw) mk('Скачать файл сейва', async () => { if (await saveDownload('oldgold-broken-save.json', raw) === false && typeof toast === 'function') toast(t(window.OldGoldAndroid ? 'Не удалось сохранить файл.' : 'Не удалось скачать')); });
     mk('Понятно', () => el.remove());
     el.appendChild(row);
     document.body.appendChild(el);

@@ -203,7 +203,7 @@ function wmFloatStack(modal) {
 }
 
 // закрыть верхнее окно: его крестик / «Закрыть» / Esc
-const WM_CLOSE_RE = /^\s*(✕|×|x|Закрыть|Понятно|Назад|Отмена|Позже|Не сейчас|Close|Back|Cancel|OK|Ок)\s*$/i;
+const WM_CLOSE_RE = /^\s*(✕|×|x|Закрыть|Понятно|Назад|Отмена|Позже|Не сейчас|Close|Back|Cancel|OK|Ок|关闭|明白了|返回|取消|稍后|暂时不用|暂时不了|确定|知道了)\s*$/i;
 function wmCloseTop() {
   const list = wmDialogs().filter(el => !el.classList.contains('wm-wait'));
   if (!list.length) return false;

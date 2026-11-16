@@ -1,14 +1,11 @@
 {
-  "appId": "ru.oldgold.personal",
-  "appName": "OldGold",
-  "webDir": "shell",
+  "appId": "ru.oldgold.zhcn",
+  "appName": "OldGold 简体中文版",
+  "webDir": "www",
   "backgroundColor": "#1a130d",
   "server": {
-    "url": "https://xxxlexolasxxx.github.io/OldGold/",
     "cleartext": false,
-    "androidScheme": "https",
-    "allowNavigation": ["xxxlexolasxxx.github.io"],
-    "errorPath": "offline.html"
+    "androidScheme": "https"
   },
   "ios": { "contentInset": "never", "backgroundColor": "#1a130d" },
   "android": { "backgroundColor": "#1a130d", "allowMixedContent": false },

@@ -306,13 +306,20 @@ function profAction(a, k) {
   profRefresh();
 }
 
-function profExport() {
+async function profExport() {
   const p = profCur(), slots = {};
   for (let n = 1; n <= PROF_SLOTS; n++) {
     const key = slotKey(n);
     try { const d = localStorage.getItem(SAVE_KEY + key); if (d) slots[n] = { data: d, meta: localStorage.getItem(SAVE_KEY + key + '.meta') }; } catch (e) { /* пропускаем */ }
   }
-  const blob = new Blob([JSON.stringify({ feodProfile: 1, profile: p, slots })], { type: 'application/json' });
+  const data = JSON.stringify({ feodProfile: 1, profile: p, slots });
+  if (window.OldGoldAndroid) {
+    const result = await window.OldGoldAndroid.saveFile(`oldgold-${p.name}.json`, data);
+    profMsg = t(result === null ? 'Отмена' : result ? 'Файл сохранён.' : 'Не удалось сохранить файл.');
+    profRefresh();
+    return;
+  }
+  const blob = new Blob([data], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `oldgold-${p.name.replace(/[^\wа-яё-]+/gi, '_')}.json`;

@@ -41,7 +41,7 @@ function boot({ query = '', stored, nav = 'en-US', noStorage = false, dom = true
   class CanvasRenderingContext2D {
     constructor() { this.font = 'bold 12px Georgia'; }
     measureText(s) { drawn.push({ kind: 'measure', s, font: this.font }); return { width: Array.from(s).reduce((n, c) => n + (/\p{Script=Han}/u.test(c) ? 12 : 6), 0) }; }
-    fillText(s, x, y) { drawn.push({ kind: 'fill', s, x, y, font: this.font }); }
+    fillText(s, x, y) { if (this.failDraw) throw Error('draw failed'); drawn.push({ kind: 'fill', s, x, y, font: this.font }); }
     strokeText(s, x, y) { drawn.push({ kind: 'stroke', s, x, y, font: this.font }); }
   }
   const document = new Document();
@@ -160,6 +160,25 @@ check('Canvas measurement and both drawing paths share CJK font without leaking 
   const english = boot({ query: '?lang=en' }); const ec = new english.CanvasRenderingContext2D(); ec.fillText('Hello', 0, 0);
   assert.equal(english.drawn[0].font, ec.font);
 });
+check('Canvas avoids redundant font changes and restores fonts and name boundaries after errors', () => {
+  const c = boot(); c.I18N.add('zh-CN', zh);
+  const ctx = new c.CanvasRenderingContext2D();
+  let font = c.I18N.canvasFont(ctx.font), writes = 0;
+  Object.defineProperty(ctx, 'font', { get() { return font; }, set(v) { writes++; font = v; } });
+  ctx.measureText('Склад'); ctx.fillText('Склад', 0, 0); ctx.strokeText('Склад', 0, 0);
+  assert.equal(writes, 0, 'Already-localised font must not be reparsed by native Canvas setters');
+  font = 'bold 12px Georgia'; ctx.failDraw = true;
+  assert.throws(() => c.I18N.canvasUserText(ctx, 'fillText', 'Склад', 0, 0), /draw failed/);
+  assert.equal(font, 'bold 12px Georgia');
+  assert.equal(writes, 2, 'An exceptional draw must restore the original font');
+  ctx.failDraw = false; ctx.fillText('Склад', 0, 0);
+  assert.equal(c.drawn.at(-1).s, '仓库', 'A failed name draw must not suppress later system translations');
+  const english = boot({ query: '?lang=en' }), ec = new english.CanvasRenderingContext2D();
+  let enWrites = 0, enFont = ec.font;
+  Object.defineProperty(ec, 'font', { get() { return enFont; }, set(v) { enWrites++; enFont = v; } });
+  ec.measureText('123'); ec.fillText('123', 0, 0); ec.strokeText('123', 0, 0);
+  assert.equal(enWrites, 0, 'English must retain its original no-font-write path');
+});
 check('Chinese wrapping translates before measuring, preserves content and explicit lines', () => {
   const c = boot({ nav: 'zh-CN' }); c.I18N.add('zh-CN', zh); const ctx = new c.CanvasRenderingContext2D();
   const lines = c.I18N.wrapText(ctx, 'Очень длинная история', 60);
@@ -167,6 +186,13 @@ check('Chinese wrapping translates before measuring, preserves content and expli
   assert.ok(lines.every(s => ctx.measureText(s).width <= 60 && !/^[，。！？]/.test(s)));
   assert.deepEqual(Array.from(c.I18N.wrapText(ctx, '仓库\n\n没有食物', 100)), ['仓库', '', '没有食物']);
   assert.equal(c.I18N.wrapText(ctx, 'Ctrl+S 保存', 100)[0], 'Ctrl+S 保存');
+  assert.equal(ctx.font, 'bold 12px Georgia');
+  // Older Android WebViews may not expose Intl.Segmenter. Keep the existing
+  // code-point fallback usable instead of making the cached fast path required.
+  c.context.Intl = {};
+  const fallback = c.I18N.wrapText(ctx, '中文 Ctrl+S 保存', 100);
+  assert.equal(fallback.join('').replace(/ /g, ''), '中文Ctrl+S保存');
+  assert.ok(fallback.every(s => ctx.measureText(s).width <= 100));
   assert.equal(ctx.font, 'bold 12px Georgia');
 });
 check('user names matching source keys remain literal in HTML, native dialogs and Canvas', () => {

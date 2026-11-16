@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "www": "node ../desktop/build-www.js www",
-    "sync": "cap sync android",
+    "sync": "npm run www && cap sync android",
     "android": "npm run sync && cap open android",
     "ios": "npm run sync && cap open ios"
   },
@@ -16,5 +16,8 @@
     "@capacitor/ios": "^8.5.3",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
   }
 }

@@ -4,11 +4,11 @@ android {
     namespace = "ru.oldgold.game"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "ru.oldgold.personal"
+        applicationId "ru.oldgold.zhcn"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.1"
+        versionCode 10001
+        versionName "0.12.5-zh.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +16,24 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        localRelease {
+            if (System.getenv('OLDGOLD_KEYSTORE_PATH')) {
+                storeFile file(System.getenv('OLDGOLD_KEYSTORE_PATH'))
+                storePassword System.getenv('OLDGOLD_STORE_PASSWORD')
+                keyAlias System.getenv('OLDGOLD_KEY_ALIAS')
+                keyPassword System.getenv('OLDGOLD_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
+        debug {
+            // With the private local key, test and release builds can be
+            // upgraded in place so save persistence can be verified.
+            if (System.getenv('OLDGOLD_KEYSTORE_PATH')) signingConfig signingConfigs.localRelease
+        }
         release {
+            signingConfig signingConfigs.localRelease
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

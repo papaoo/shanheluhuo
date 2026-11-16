@@ -63,7 +63,7 @@ check(eq(W.wmStackHide([{ id: 'adm', seq: 5, pinned: true }, { id: 'b', seq: 2 }
   check(/body\.wm-pc-tab:not\(\.mobile\) :is\(#info-wrap, #split\)\s*\{\s*display:\s*none/.test(css) && /body\.wm-pc-info:not\(\.mobile\) :is\(#tab-area, #split\)\s*\{\s*display:\s*none/.test(css), 'ПК: в колонке одно окно — либо вкладка, либо здание');
   const ui = read('js/ui.js');
   check(/FIELD_TOOLS/.test(ui) && /BUILD_CATS\[UI\.cat\] === 'Еда'/.test(ui), 'поля пшеницы и хмеля — в разделе «Еда»');
-  check(/backButton[^\n]*wmBack/.test(read('js/native.js')), '«Назад» на Android закрывает верхнее окно');
+  check(/backButton'[\s\S]{0,200}wmBack/.test(read('js/native.js')), '«Назад» на Android закрывает верхнее окно');
   check(/\[data-wm="admin"\]/.test(read('js/menugroups.js')), 'пункт «Права игроков» — на виду в меню');
 }
 

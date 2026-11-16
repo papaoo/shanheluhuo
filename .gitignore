@@ -19,11 +19,17 @@ mobile/ios/App/Pods/
 
 # Личный APK (не коммитим) и локальные пути SDK
 mobile/*.apk
+mobile/*.apk.sha256
 *.apk
 mobile/android/local.properties
 mobile/android/app/build/
 mobile/android/build/
 mobile/android/.gradle/
+mobile/.avd/
+mobile/out/
+mobile/*.jks
+mobile/*.keystore
+mobile/signing.properties
 
 # Визуальные тесты: снимки текущего прогона и различия (эталоны в tests/visual/ref коммитим)
 tests/visual/out/
