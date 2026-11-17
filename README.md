@@ -1,6 +1,21 @@
-# OldGold
+# shanheluhuo
 
-[![Проверки](https://github.com/xXxLexolasxXx/OldGold/actions/workflows/test.yml/badge.svg)](https://github.com/xXxLexolasxXx/OldGold/actions/workflows/test.yml)
+基于 [OldGold](https://github.com/xXxLexolasxXx/OldGold) 维护的简体中文开发版本。保留原作者的完整 Git 历史，已包含默认中文、中文词典和 Android 离线打包适配。
+
+- 本项目仓库：[papaoo/shanheluhuo](https://github.com/papaoo/shanheluhuo)，对应本地 `origin`。
+- 原项目仓库：[xXxLexolasxXx/OldGold](https://github.com/xXxLexolasxXx/OldGold)，对应本地 `upstream`。
+- 初始上游基线：`b1ec26d2f2eb7ff131a3fad7347bb5199d2090ac`；固定标签：`upstream-baseline/2026-11-17`。
+- [上游同步与合并流程](docs/UPSTREAM_SYNC.zh-CN.md) · [浏览器中文说明](docs/localization/README.zh-CN.md) · [Android 构建说明](mobile/README.zh-CN.md)。
+
+在项目根目录运行 `node server/server.js`，打开 <http://localhost:8787/>。首次运行默认简体中文；已有的语言选择仍会保留。
+
+当前手机版本仍需改善文字可读性、面板布局和触控体验；已有技术验收不代表完整手游体验验收。APK、签名私钥、个人存档和本地构建缓存不纳入源码仓库。Android 的应用名称与包名保持已有版本，仓库命名不改变存档兼容性。
+
+[![CI](https://github.com/papaoo/shanheluhuo/actions/workflows/ci.yml/badge.svg)](https://github.com/papaoo/shanheluhuo/actions/workflows/ci.yml)
+
+## OldGold 上游项目说明
+
+以下保留原项目介绍；其中的在线体验链接指向原作者发布的版本。本仓库尚未配置独立游戏网站。
 
 **OldGold** — браузерная экономическая стратегия про деревню гномов. Прокладывай дороги, строй по кирпичикам, налаживай цепочки от зерна до доспехов, веди героя одного из десяти классов, держи оборону от ночной нечисти и сезонных бед, дойди до Чёрного шпиля и тёмного мага Малгора. Можно играть вдвоём и больше в общей деревне. Вся графика и музыка нарисованы и синтезируются в самой игре, внешних ассетов нет. Игра на русском, английском и упрощённом китайском, версия 0.11.x.
 

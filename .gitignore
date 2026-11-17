@@ -31,6 +31,16 @@ mobile/*.jks
 mobile/*.keystore
 mobile/signing.properties
 
+# Local credentials and signing material, wherever they are stored
+*.jks
+*.keystore
+signing.json
+signing.properties
+.env
+.env.*
+!.env.example
+!.env.template
+
 # Визуальные тесты: снимки текущего прогона и различия (эталоны в tests/visual/ref коммитим)
 tests/visual/out/
 tests/i18n/out/
